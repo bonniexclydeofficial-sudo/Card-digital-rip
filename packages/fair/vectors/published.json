@@ -1,0 +1,218 @@
+[
+  {
+    "name": "archive-nonce-0",
+    "serverSeedHex": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "clientSeed": "ada-client-seed",
+    "nonce": 0,
+    "packVersion": 1,
+    "tiers": [
+      {
+        "tier": "common",
+        "oddsBps": 7200
+      },
+      {
+        "tier": "rare",
+        "oddsBps": 2000
+      },
+      {
+        "tier": "epic",
+        "oddsBps": 650
+      },
+      {
+        "tier": "legendary",
+        "oddsBps": 140
+      },
+      {
+        "tier": "grail",
+        "oddsBps": 10
+      }
+    ],
+    "slotCount": 24,
+    "expected": {
+      "hmac": "a2589b399aac83bbe4d9da6725bade2019f8a3e807f6f4fc865d2eebb3d59c6c",
+      "tier": "common",
+      "roll": 5897,
+      "slotIndex": 11
+    }
+  },
+  {
+    "name": "archive-nonce-1",
+    "serverSeedHex": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "clientSeed": "ada-client-seed",
+    "nonce": 1,
+    "packVersion": 1,
+    "tiers": [
+      {
+        "tier": "common",
+        "oddsBps": 7200
+      },
+      {
+        "tier": "rare",
+        "oddsBps": 2000
+      },
+      {
+        "tier": "epic",
+        "oddsBps": 650
+      },
+      {
+        "tier": "legendary",
+        "oddsBps": 140
+      },
+      {
+        "tier": "grail",
+        "oddsBps": 10
+      }
+    ],
+    "slotCount": 12,
+    "expected": {
+      "hmac": "0ac47dbf6f0030f3db24ce90a1260bc4599f248d9679a0a2321f9e4dbbe8041d",
+      "tier": "epic",
+      "roll": 9407,
+      "slotIndex": 3
+    }
+  },
+  {
+    "name": "archive-nonce-2",
+    "serverSeedHex": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "clientSeed": "ada-client-seed",
+    "nonce": 2,
+    "packVersion": 1,
+    "tiers": [
+      {
+        "tier": "common",
+        "oddsBps": 7200
+      },
+      {
+        "tier": "rare",
+        "oddsBps": 2000
+      },
+      {
+        "tier": "epic",
+        "oddsBps": 650
+      },
+      {
+        "tier": "legendary",
+        "oddsBps": 140
+      },
+      {
+        "tier": "grail",
+        "oddsBps": 10
+      }
+    ],
+    "slotCount": 8,
+    "expected": {
+      "hmac": "f152d2715010cb0af20d5a1e87b19019917b22b28a747923262f1162a741a925",
+      "tier": "common",
+      "roll": 6881,
+      "slotIndex": 2
+    }
+  },
+  {
+    "name": "archive-nonce-7",
+    "serverSeedHex": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "clientSeed": "client-seed-test",
+    "nonce": 7,
+    "packVersion": 1,
+    "tiers": [
+      {
+        "tier": "common",
+        "oddsBps": 7200
+      },
+      {
+        "tier": "rare",
+        "oddsBps": 2000
+      },
+      {
+        "tier": "epic",
+        "oddsBps": 650
+      },
+      {
+        "tier": "legendary",
+        "oddsBps": 140
+      },
+      {
+        "tier": "grail",
+        "oddsBps": 10
+      }
+    ],
+    "slotCount": 3,
+    "expected": {
+      "hmac": "9f42b0f5b1a6ca0b5d6736a95628a643dcffad7e1a940b7e4d3563da7fc78f51",
+      "tier": "rare",
+      "roll": 8021,
+      "slotIndex": 1
+    }
+  },
+  {
+    "name": "notes-nonce-0",
+    "serverSeedHex": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "clientSeed": "ada-client-seed",
+    "nonce": 0,
+    "packVersion": 1,
+    "tiers": [
+      {
+        "tier": "common",
+        "oddsBps": 7500
+      },
+      {
+        "tier": "rare",
+        "oddsBps": 1800
+      },
+      {
+        "tier": "epic",
+        "oddsBps": 550
+      },
+      {
+        "tier": "legendary",
+        "oddsBps": 140
+      },
+      {
+        "tier": "grail",
+        "oddsBps": 10
+      }
+    ],
+    "slotCount": 16,
+    "expected": {
+      "hmac": "a2589b399aac83bbe4d9da6725bade2019f8a3e807f6f4fc865d2eebb3d59c6c",
+      "tier": "common",
+      "roll": 5897,
+      "slotIndex": 11
+    }
+  },
+  {
+    "name": "notes-nonce-4",
+    "serverSeedHex": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "clientSeed": "rotated-client",
+    "nonce": 4,
+    "packVersion": 2,
+    "tiers": [
+      {
+        "tier": "common",
+        "oddsBps": 7500
+      },
+      {
+        "tier": "rare",
+        "oddsBps": 1800
+      },
+      {
+        "tier": "epic",
+        "oddsBps": 550
+      },
+      {
+        "tier": "legendary",
+        "oddsBps": 140
+      },
+      {
+        "tier": "grail",
+        "oddsBps": 10
+      }
+    ],
+    "slotCount": 3,
+    "expected": {
+      "hmac": "e35778b20b7bb6afb6442a7ebc365432423a07ffa2a0edfa507f2c9aba1f725e",
+      "tier": "common",
+      "roll": 562,
+      "slotIndex": 2
+    }
+  }
+]
