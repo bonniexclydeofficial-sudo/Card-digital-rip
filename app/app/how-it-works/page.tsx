@@ -23,8 +23,9 @@ export default function HowItWorksPage() {
       </p>
       <h2>Reveal</h2>
       <p>
-        The sleeve, assay meter, and slab are original artwork. The meter stops on the tick for the drawn tier. Skip, or a
-        reduced-motion setting, jumps straight to the slab.
+        The sleeve, assay meter, and slab are original artwork. The meter climbs for about two and a half seconds and stops
+        on the tick for the drawn tier. It does not travel toward a higher tier. Skip, hold the stage, or a reduced-motion
+        setting jumps straight to the slab. Particle burst on a common stays a spark. Confetti is reserved for rare and above.
       </p>
       <h2>After</h2>
       <p>

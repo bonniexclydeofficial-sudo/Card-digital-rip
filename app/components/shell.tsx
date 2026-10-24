@@ -11,41 +11,51 @@ export interface Viewer {
 export function Shell({ viewer, children }: { viewer: Viewer | null; children: React.ReactNode }) {
   return (
     <div className="shell">
+      <a className="skip" href="#main">
+        Skip to content
+      </a>
       <header className="topbar">
         <Link href="/" className="brand">
-          <span className="mark">R</span>
+          <span className="mark" aria-hidden="true">
+            R
+          </span>
           Card Digital Rip
         </Link>
-        <nav className="nav">
-          <Link href="/catalog">Packs</Link>
-          <Link href="/odds">Odds</Link>
-          <Link href="/how-it-works">How it works</Link>
-          <Link href="/verify/pull_example">Verify</Link>
-          {viewer ? (
-            <>
-              <Link href="/vault">Vault</Link>
-              <Link href="/wallet">Wallet</Link>
-              <Link href="/settings">Settings</Link>
-              <Link href="/promos">Promos</Link>
-              {viewer.role === "admin" ? <Link href="/admin">Admin</Link> : null}
-              <span className="balance">{money(viewer.availableCents)}</span>
-              <form action={logoutAction}>
-                <button className="btn secondary" type="submit">
-                  Sign out
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <Link href="/login">Sign in</Link>
-              <Link href="/signup" className="btn">
-                Open an account
-              </Link>
-            </>
-          )}
-        </nav>
+        <details className="menu">
+          <summary className="nav-toggle">Menu</summary>
+          <nav className="nav" aria-label="Primary">
+            <Link href="/catalog">Packs</Link>
+            <Link href="/odds">Odds</Link>
+            <Link href="/how-it-works">How it works</Link>
+            <Link href="/verify/pull_example">Verify</Link>
+            {viewer ? (
+              <>
+                <Link href="/vault">Vault</Link>
+                <Link href="/wallet">Wallet</Link>
+                <Link href="/settings">Settings</Link>
+                <Link href="/promos">Promos</Link>
+                {viewer.role === "admin" ? <Link href="/admin">Admin</Link> : null}
+                <span className="balance">{money(viewer.availableCents)}</span>
+                <form action={logoutAction}>
+                  <button className="btn secondary" type="submit">
+                    Sign out
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <Link href="/login">Sign in</Link>
+                <Link href="/signup" className="btn">
+                  Open an account
+                </Link>
+              </>
+            )}
+          </nav>
+        </details>
       </header>
-      <main className="main">{children}</main>
+      <main id="main" className="main">
+        {children}
+      </main>
       <footer className="footer">
         <span>Example inventory. Generative slabs. Credits stay in the wallet.</span>
         <span>

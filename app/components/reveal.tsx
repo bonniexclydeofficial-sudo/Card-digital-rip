@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buybackAction } from "@/lib/actions";
 import { money, TIER_LABEL } from "@/lib/format";
 import {
@@ -33,13 +33,46 @@ export interface RevealPull {
   vaultStatus: string | null;
   haptics?: boolean;
   muteSound?: boolean;
+  pulledAt?: string | null;
 }
 
 const TICKS = ["Common", "Rare", "Epic", "Legendary", "Grail"];
+const SPARKS = Array.from({ length: 14 }, (_, index) => {
+  const angle = (index / 14) * Math.PI * 2;
+  const radius = 90 + (index % 4) * 28;
+  return { dx: `${Math.cos(angle) * radius}px`, dy: `${Math.sin(angle) * radius - 20}px` };
+});
+
+function OfferClock({ from }: { from: string }) {
+  const [label, setLabel] = useState("72:00:00");
+  useEffect(() => {
+    const end = new Date(from).getTime() + 72 * 60 * 60 * 1000;
+    const tick = () => {
+      const remaining = Math.max(0, end - Date.now());
+      const hours = Math.floor(remaining / 3_600_000);
+      const minutes = Math.floor((remaining % 3_600_000) / 60_000);
+      const seconds = Math.floor((remaining % 60_000) / 1000);
+      setLabel(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`,
+      );
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [from]);
+  return (
+    <p className="timer">
+      Offer window {label}. Separate purchase offer. It expires in 72 hours. It is not a refund.
+    </p>
+  );
+}
 
 export function RevealStage({ pull }: { pull: RevealPull }) {
   const [reduced, setReduced] = useState(false);
-  const skip = pull.skip || reduced;
+  const [heldSkip, setHeldSkip] = useState(false);
+  const [shareNote, setShareNote] = useState<string | null>(null);
+  const holdTimer = useRef<number | null>(null);
+  const skip = pull.skip || reduced || heldSkip;
   const [state, setState] = useState<RevealState>(() =>
     initialReveal({ tier: pull.tierIndex, isGrail: pull.isGrail, skip: pull.skip }),
   );
@@ -99,8 +132,33 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
     };
   }, [skip, pull.tierIndex, pull.isGrail]);
 
+  function startHold() {
+    if (holdTimer.current) window.clearTimeout(holdTimer.current);
+    holdTimer.current = window.setTimeout(() => setHeldSkip(true), 650);
+  }
+  function endHold() {
+    if (holdTimer.current) window.clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  }
+
+  async function shareCard() {
+    const text = `${pull.subject} · ${pull.grader} ${pull.grade} · fair market ${money(pull.fmvCents)}. Separate purchase offer from Card Digital Rip.`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: pull.subject, text, url: window.location.href });
+        setShareNote("Share sheet opened.");
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setShareNote("Card summary copied.");
+    } catch {
+      setShareNote("Share closed.");
+    }
+  }
+
   const showSlab = state.phase === "slab" || state.phase === "decision";
   const tierName = TIER_NAMES[state.inputs.tier] ?? "common";
+  const celebrate = state.inputs.tier >= 1 && (state.phase === "burst" || state.phase === "slab");
 
   return (
     <div
@@ -110,6 +168,9 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
       data-meter-ceiling={state.meterCeiling}
       data-meter-pos={pos}
       data-phase={state.phase}
+      onPointerDown={startHold}
+      onPointerUp={endHold}
+      onPointerLeave={endHold}
     >
       <div className="assay" aria-hidden="true">
         <div className="assay-fill" style={{ height: `${meterFillPercent(pos)}%` }} />
@@ -121,16 +182,37 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
       </div>
       <RevealFx phase={state.phase} haptics={pull.haptics ?? false} mute={pull.muteSound ?? false} reduced={skip} />
       <div className="stage">
+        {celebrate ? (
+          <div className="particles confetti" aria-hidden="true">
+            {SPARKS.map((spark, index) => (
+              <i key={index} style={{ ["--dx" as string]: spark.dx, ["--dy" as string]: spark.dy }} />
+            ))}
+          </div>
+        ) : state.phase === "burst" ? (
+          <div className="particles" aria-hidden="true">
+            {SPARKS.slice(0, 8).map((spark, index) => (
+              <i key={index} style={{ ["--dx" as string]: spark.dx, ["--dy" as string]: spark.dy }} />
+            ))}
+          </div>
+        ) : null}
+        <div className="decision" style={{ marginTop: 0 }}>
+          <button type="button" className="btn secondary" onClick={() => setHeldSkip(true)}>
+            Skip
+          </button>
+          <span className="muted">Hold anywhere on the stage to skip.</span>
+        </div>
         {showSlab ? (
-          <div>
-            <Slab
-              cert={pull.certNumber}
-              subject={pull.subject}
-              grade={pull.grade}
-              grader={pull.grader}
-              year={pull.year}
-              setName={pull.setName}
-            />
+          <div aria-live="polite">
+            <div className="holo">
+              <Slab
+                cert={pull.certNumber}
+                subject={pull.subject}
+                grade={pull.grade}
+                grader={pull.grader}
+                year={pull.year}
+                setName={pull.setName}
+              />
+            </div>
             <p className={`kicker tier-${tierName}`}>{TIER_LABEL[tierName]}</p>
             <h2>{pull.subject}</h2>
             <p className="muted">
@@ -154,8 +236,14 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
               <button className="btn secondary" type="submit">
                 Buy back for {pull.creditCents != null ? money(pull.creditCents) : "credits"}
               </button>
-              <p className="muted">Separate purchase offer. It expires in 72 hours. It is not a refund.</p>
             </form>
+            <button type="button" className="btn secondary" onClick={() => void shareCard()}>
+              Share card
+            </button>
+            {pull.pulledAt ? <OfferClock from={pull.pulledAt} /> : (
+              <p className="muted">Separate purchase offer. It expires in 72 hours. It is not a refund.</p>
+            )}
+            {shareNote ? <p className="muted">{shareNote}</p> : null}
           </div>
         ) : null}
         <p className="muted">From {pull.packName}. The draw was settled before this animation started.</p>

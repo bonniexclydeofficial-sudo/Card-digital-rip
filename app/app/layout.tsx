@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, Outfit } from "next/font/google";
+import { IBM_Plex_Mono, Inter, Syne } from "next/font/google";
 import { prisma } from "@cdr/db";
 import { Shell, type Viewer } from "@/components/shell";
 import { getSession } from "@/lib/session";
 import "./globals.css";
 
-const serif = Fraunces({ subsets: ["latin"], variable: "--font-serif" });
-const sans = Outfit({ subsets: ["latin"], variable: "--font-sans" });
-const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
+const display = Syne({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-display", display: "swap" });
+const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono", display: "swap" });
 
 export const dynamic = "force-dynamic";
+
+export const viewport = { themeColor: "#07080d" };
 
 export const metadata: Metadata = {
   title: "Card Digital Rip",
@@ -31,7 +33,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
   return (
     <html lang="en">
-      <body className={`${serif.variable} ${sans.variable} ${mono.variable}`}>
+      <body className={`${display.variable} ${sans.variable} ${mono.variable}`}>
         <Shell viewer={viewer}>{children}</Shell>
       </body>
     </html>

@@ -16,7 +16,11 @@ export default async function VerifyPage({ params }: { params: Promise<{ pullId:
         The server recomputes HMAC-SHA256 of the raw 32-byte seed over <span className="mono">{proof.message}</span>, then
         rejection-samples the tier and the slot. Before the seed is revealed, you get the commit hash and the house check.
       </p>
-      <p data-testid="verify-status" className={status === "Match" ? "ok" : status === "Mismatch" ? "error" : "muted"}>
+      <p className="lede">
+        A match means the house recomputed the same tier, slot, and card from the published commit. It is a fairness check,
+        not a payout.
+      </p>
+      <p data-testid="verify-status" className={status === "Match" ? "match-badge" : status === "Mismatch" ? "error" : "muted"}>
         {status}
       </p>
       <div className="row">

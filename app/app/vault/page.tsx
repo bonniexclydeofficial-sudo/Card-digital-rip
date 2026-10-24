@@ -37,14 +37,16 @@ export default async function VaultPage({
           const held = item.shipHoldUntil && item.shipHoldUntil > new Date();
           return (
             <article key={item.id} className="ticket">
-              <Slab
-                cert={item.card.certNumber}
-                subject={item.card.subject}
-                grade={item.card.grade.toString()}
-                grader={item.card.grader}
-                year={item.card.year}
-                setName={item.card.setName}
-              />
+              <div className="holo">
+                <Slab
+                  cert={item.card.certNumber}
+                  subject={item.card.subject}
+                  grade={item.card.grade.toString()}
+                  grader={item.card.grader}
+                  year={item.card.year}
+                  setName={item.card.setName}
+                />
+              </div>
               <h2>{item.card.subject}</h2>
               <p className="muted">
                 {item.card.grader} {item.card.grade.toString()} · {item.card.certNumber}

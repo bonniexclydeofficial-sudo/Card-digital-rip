@@ -17,12 +17,13 @@ export interface RevealState {
   meterTier: number;
 }
 
+/** Arm + meter + burst + slab = 5.26s. The meter duration is the climb, and it stops on the drawn tier. */
 export const PHASE_MS: Record<RevealPhase, number> = {
   idle: 0,
-  arm: 500,
-  meter: 1800,
-  burst: 700,
-  slab: 1400,
+  arm: 640,
+  meter: 2400,
+  burst: 720,
+  slab: 1500,
   decision: 0,
 };
 

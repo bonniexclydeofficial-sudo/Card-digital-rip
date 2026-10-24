@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AdminNav } from "@/components/admin-nav";
 import { prisma, recentAudits } from "@cdr/db";
 import { getSession } from "@/lib/session";
 
@@ -12,6 +13,8 @@ export default async function AuditPage() {
     <div>
       <p className="kicker">Audit</p>
       <h1>Admin audit</h1>
+      <AdminNav />
+      <div className="table-scroll">
       <table>
         <thead>
           <tr>
@@ -32,6 +35,7 @@ export default async function AuditPage() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

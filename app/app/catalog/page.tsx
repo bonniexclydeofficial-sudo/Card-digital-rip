@@ -12,7 +12,7 @@ export default async function CatalogPage() {
       <h1>Field Notes, Archive, Vault Door.</h1>
       <div className="grid-3">
         {packs.map((pack) => (
-          <Link key={pack.id} href={`/packs/${pack.slug}`} className="ticket">
+          <Link key={pack.id} href={`/packs/${pack.slug}`} className="ticket rarity-card">
             <p className="kicker">{money(pack.priceCents)}</p>
             <h2>{pack.name}</h2>
             <p className="muted">{pack.description}</p>

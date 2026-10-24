@@ -39,6 +39,7 @@ export default async function RipPage({ params }: { params: Promise<{ pullId: st
           vaultStatus: pull.vault?.status ?? null,
           haptics: user?.haptics ?? false,
           muteSound: user?.muteSound ?? false,
+          pulledAt: pull.at,
         }}
       />
       <p className="muted">

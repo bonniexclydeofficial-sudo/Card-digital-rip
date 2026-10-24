@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { evaluatePack, houseInventoryCents, prisma } from "@cdr/db";
+import { AdminNav } from "@/components/admin-nav";
 import { PackBuilder } from "@/components/pack-builder";
 import { publishAction } from "@/lib/actions";
 import { money, rtpLabel } from "@/lib/format";
@@ -32,6 +33,7 @@ export default async function AdminPacksPage({
     <div>
       <p className="kicker">Admin</p>
       <h1>Packs and the margin guard</h1>
+      <AdminNav />
       <p className="lede">
         Publish requires gross margin of at least 4% at the base-case assumptions, RTP inside 98–103%, odds that sum to
         10,000, three cards in every open tier, fresh prices, images, and liability inside house inventory.
@@ -44,7 +46,7 @@ export default async function AdminPacksPage({
         return (
           <section
             key={pack.id}
-            className="ticket"
+            className="ticket panel"
             data-testid={pack.slug === "draft-thin-margin" ? "margin-guard" : undefined}
             style={{ marginBottom: 16 }}
           >

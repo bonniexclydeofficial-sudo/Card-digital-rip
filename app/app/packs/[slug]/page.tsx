@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPackPage } from "@cdr/db";
+import { PoolGrid } from "@/components/pool-grid";
 import { RipButton } from "@/components/rip-button";
-import { Slab } from "@/components/slab";
 import { getSession } from "@/lib/session";
 import { money, oddsLabel, rtpLabel, TIER_LABEL } from "@/lib/format";
+
+const PROFILES = [
+  { label: "Steady", href: "/packs/pack-25", match: (cents: number) => cents <= 2500 },
+  { label: "Balance", href: "/packs/pack-100", match: (cents: number) => cents > 2500 && cents <= 10_000 },
+  { label: "Wild", href: "/packs/pack-500", match: (cents: number) => cents > 10_000 },
+];
 
 export default async function PackPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -12,14 +18,27 @@ export default async function PackPage({ params }: { params: Promise<{ slug: str
   if (!pack) notFound();
   const session = await getSession();
   const stock = pack.tiers.reduce((sum, tier) => sum + tier.stock, 0);
+  const cards = pack.tiers.flatMap((tier) => tier.cards.map((card) => ({ ...card, tier: tier.tier })));
   return (
-    <div>
+    <div className="pack-page">
       <p className="banner">Example inventory. Slabs are generative art from the cert. They are not photographs of real cards.</p>
-      <div className="grid-2">
+      <div className="pack-top">
         <div>
           <p className="kicker">{pack.status === "live" ? "Live pack" : "Paused"}</p>
           <h1>{pack.name}</h1>
           <p className="lede">{pack.description}</p>
+          <div className="chips" aria-label="Pack posture">
+            {PROFILES.map((profile) => (
+              <Link
+                key={profile.label}
+                className="chip"
+                href={profile.href}
+                aria-current={profile.match(pack.priceCents) ? "true" : undefined}
+              >
+                {profile.label}
+              </Link>
+            ))}
+          </div>
           <p className="price" data-testid="pack-price">
             {money(pack.priceCents)}
           </p>
@@ -39,16 +58,26 @@ export default async function PackPage({ params }: { params: Promise<{ slug: str
             <span>Stock left</span>
             <span>{stock}</span>
           </div>
-          <section data-testid="pack-odds">
+          <section data-testid="pack-odds" aria-label="Published odds">
             {pack.tiers.map((tier) => (
-              <div className="row" key={tier.tier} data-tier={tier.tier}>
-                <span className={`tier-${tier.tier}`}>{TIER_LABEL[tier.tier] ?? tier.tier}</span>
-                <span>
-                  {oddsLabel(tier.oddsBps)} · {tier.stock}/{tier.total}
-                </span>
+              <div className="odds-line" key={tier.tier} data-tier={tier.tier}>
+                <div className="row">
+                  <span className={`tier-${tier.tier}`}>{TIER_LABEL[tier.tier] ?? tier.tier}</span>
+                  <span>
+                    {oddsLabel(tier.oddsBps)} · {tier.stock}/{tier.total}
+                  </span>
+                </div>
+                <div className="odds-track" aria-hidden="true">
+                  <div className="odds-fill" style={{ width: `${Math.max(tier.oddsBps / 100, 1.2)}%` }} />
+                </div>
               </div>
             ))}
           </section>
+          <div className="badges">
+            <span className="badge">Provably fair</span>
+            <span className="badge">Vaulted</span>
+            <span className="badge">Ship in 2 business days</span>
+          </div>
           <p data-testid="fee-note">{pack.fees.note}</p>
           <p className="muted" data-testid="tax-note">
             Sales tax is collected when credits are spent on a card, not when credits are purchased. This demo rate is 0.
@@ -58,45 +87,26 @@ export default async function PackPage({ params }: { params: Promise<{ slug: str
           <p className="hash mono" data-testid="seed-hash">
             {pack.seedHash}
           </p>
+        </div>
+        <aside className="buy-dock" aria-label="Rip">
+          <p className="kicker">Rip</p>
+          <p className="price">{money(pack.priceCents)}</p>
+          <p className="muted">EV {money(Math.round(pack.evCents))}. The draw is written before the animation.</p>
           {session ? (
             <RipButton
               slug={pack.slug}
               disabled={pack.status !== "live" || stock === 0}
-              label={pack.status === "live" ? `Rip for ${money(pack.priceCents)}` : "Pack paused"}
+              label={pack.status === "live" ? `Rip x1 · ${money(pack.priceCents)}` : "Pack paused"}
             />
           ) : (
             <Link className="btn" href="/login">
               Sign in to rip
             </Link>
           )}
-        </div>
-        <div>
-          <p className="kicker">Pool</p>
-          <div className="pool" data-testid="pool">
-            {pack.tiers.flatMap((tier) =>
-              tier.cards.map((card) => (
-                <div key={`${tier.tier}-${card.certNumber}-${card.id}`}>
-                  <Slab
-                    cert={card.certNumber}
-                    subject={card.subject}
-                    grade={card.grade}
-                    grader={card.grader}
-                    year={card.year}
-                    setName={card.setName}
-                    pulled={card.slotState !== "available"}
-                  />
-                  <p className={`kicker tier-${tier.tier}`}>{TIER_LABEL[tier.tier] ?? tier.tier}</p>
-                  <p>
-                    {card.subject}
-                    <br />
-                    <span className="muted">{money(card.fmvCents)}</span>
-                  </p>
-                </div>
-              )),
-            )}
-          </div>
-        </div>
+        </aside>
       </div>
+      <h2>Pool</h2>
+      <PoolGrid cards={cards} />
     </div>
   );
 }

@@ -14,9 +14,11 @@ void main() {
   vec2 uv = gl_FragCoord.xy / 400.0;
   float band = sin(uv.x * 18.0 + time * 3.0) * 0.15;
   float sheen = smoothstep(0.2, 0.8, uv.y + band);
-  vec3 brass = vec3(0.83, 0.71, 0.51);
-  vec3 ink = vec3(0.08, 0.07, 0.05);
-  gl_FragColor = vec4(mix(ink, brass, sheen * 0.55), 1.0);
+  vec3 gold = vec3(0.90, 0.74, 0.32);
+  vec3 cyan = vec3(0.25, 0.86, 0.95);
+  vec3 ink = vec3(0.03, 0.04, 0.06);
+  vec3 glow = mix(cyan, gold, sheen);
+  gl_FragColor = vec4(mix(ink, glow, sheen * 0.62), 1.0);
 }
 `;
 
@@ -25,7 +27,7 @@ function tone(phase: string) {
   const osc = audio.createOscillator();
   const gain = audio.createGain();
   osc.type = "triangle";
-  osc.frequency.value = phase === "burst" ? 520 : phase === "decision" ? 220 : 140;
+  osc.frequency.value = phase === "burst" ? 640 : phase === "meter" ? 280 : phase === "decision" ? 196 : 120;
   gain.gain.setValueAtTime(0.0001, audio.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.04, audio.currentTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.18);
@@ -97,7 +99,7 @@ export function RevealFx({
   useEffect(() => {
     if (phase === last.current || reduced) return;
     last.current = phase;
-    if (!mute && (phase === "burst" || phase === "decision")) {
+    if (!mute && (phase === "meter" || phase === "burst" || phase === "decision")) {
       try {
         tone(phase);
       } catch {

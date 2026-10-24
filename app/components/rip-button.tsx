@@ -25,7 +25,7 @@ export function RipButton({ slug, label, disabled }: { slug: string; label: stri
   }
 
   return (
-    <div>
+    <div className="decision" aria-busy={pending}>
       <button className="btn" type="button" data-testid="rip" disabled={disabled || pending} onClick={() => void rip(1)}>
         {pending ? "Ripping…" : label}
       </button>
@@ -35,7 +35,11 @@ export function RipButton({ slug, label, disabled }: { slug: string; label: stri
       <button className="btn secondary" type="button" data-testid="rip-x5" disabled={disabled || pending} onClick={() => void rip(5)}>
         Rip x5
       </button>
-      {error ? <p className="error">{error}</p> : null}
+      {error ? (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

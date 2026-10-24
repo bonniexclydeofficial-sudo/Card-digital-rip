@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { dashboardMetrics, prisma, recentAudits } from "@cdr/db";
+import { AdminNav } from "@/components/admin-nav";
 import { money } from "@/lib/format";
 import { getSession } from "@/lib/session";
 
@@ -16,6 +16,7 @@ export default async function AdminPage() {
       <p className="kicker">Admin</p>
       <h1>Operations</h1>
       <p className="lede">Test-mode payments, margin guard, and the audit log. No card is charged from this dashboard.</p>
+      <AdminNav />
       <div className="grid-3">
         <div className="ticket">
           <p className="kicker">Accounts</p>
@@ -42,21 +43,8 @@ export default async function AdminPage() {
           <p className="price">{money(metrics.reserveCents)}</p>
         </div>
       </div>
-      <div className="decision">
-        <Link className="btn" href="/admin/cards">
-          Card CSV
-        </Link>
-        <Link className="btn secondary" href="/admin/packs">
-          Packs
-        </Link>
-        <Link className="btn secondary" href="/admin/flags">
-          State flags
-        </Link>
-        <Link className="btn secondary" href="/admin/audit">
-          Audit log
-        </Link>
-      </div>
       <h2>Recent audit</h2>
+      <div className="table-scroll">
       <table>
         <tbody>
           {audits.map((row) => (
@@ -68,6 +56,7 @@ export default async function AdminPage() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

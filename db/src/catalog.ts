@@ -117,6 +117,7 @@ export async function getPullForOwner(pullId: string, userId: string) {
     packSlug: pull.pack.slug,
     priceCents: pull.priceCents,
     hmac: pull.hmac,
+    at: pull.at.toISOString(),
     card: {
       id: pull.card.id,
       grader: pull.card.grader,

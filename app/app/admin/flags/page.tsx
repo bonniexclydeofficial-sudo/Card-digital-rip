@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { FLAG_STATES } from "@cdr/risk";
 import { loadStateOpenFlags, prisma } from "@cdr/db";
+import { AdminNav } from "@/components/admin-nav";
 import { flagAction } from "@/lib/compliance-actions";
 import { getSession } from "@/lib/session";
 
@@ -15,6 +16,7 @@ export default async function FlagsPage() {
     <div>
       <p className="kicker">Flags</p>
       <h1>State open flags</h1>
+      <AdminNav />
       <p className="lede">
         Washington, Nevada, Michigan, Idaho, and Montana stay closed. Oklahoma, New Jersey, Tennessee, and Louisiana are
         off until an admin opens the flag. The $10k tier, turbo buyback, and VIP stay off until their flags are on.
