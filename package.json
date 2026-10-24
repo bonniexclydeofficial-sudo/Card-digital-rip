@@ -1,0 +1,35 @@
+{
+  "name": "card-digital-rip",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "pnpm --filter @cdr/app dev",
+    "build": "pnpm --filter @cdr/app build",
+    "start": "pnpm --filter @cdr/app start",
+    "db:generate": "prisma generate --schema db/prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema db/prisma/schema.prisma",
+    "db:seed": "tsx db/prisma/seed.ts",
+    "postinstall": "prisma generate --schema db/prisma/schema.prisma || true",
+    "test": "prisma generate --schema db/prisma/schema.prisma && prisma migrate deploy --schema db/prisma/schema.prisma && tsx db/prisma/seed.ts && vitest run",
+    "typecheck": "tsc -p packages/econ/tsconfig.json --noEmit && tsc -p packages/fair/tsconfig.json --noEmit && tsc -p packages/risk/tsconfig.json --noEmit && tsc -p db/tsconfig.json --noEmit && tsc -p app/tsconfig.json --noEmit",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^22.18.6",
+    "@types/pg": "^8.15.5",
+    "fast-check": "^4.3.0",
+    "pg": "^8.16.3",
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "esbuild", "prisma"]
+  }
+}

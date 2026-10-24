@@ -74,9 +74,9 @@ Demo accounts are seeded. Inventory is marked `example = true` and rendered with
 - `isGrail`
 - `skip`
 
-Phases: arm (0.5s) → rarity meter → tier burst → slab flip → decision. Total about 4–6s. The meter target **is** the drawn tier. `meterPositionAt` clamps to that tier, and the view does not animate a near-miss past it. Skip and `prefers-reduced-motion` jump to the decision with the slab visible.
+Phases: arm (0.5s) → rarity meter → tier burst → slab flip → decision. Total about 4–6s. `meterPositionAt` clamps to tick `drawnTier + 1`, and the view does not animate a near-miss past it. Skip and `prefers-reduced-motion` jump to the decision with the slab visible.
 
-The reveal is original CSS/SVG (sleeve, assay meter, slab flip). Rive is not shipped in this slice: a placeholder binary would be someone else's runtime asset, and the acceptance we can actually lock in is the state machine ("bar never exceeds drawn tier").
+The reveal is original CSS/SVG (sleeve, assay meter, slab flip). Rive is not shipped in this slice: a placeholder binary would be someone else's runtime asset, and the acceptance we can actually lock in is the state machine ("bar never exceeds drawn tier"). The meter stops on tick `drawnTier + 1` (a common stops at tick 1 and never travels toward rare). The active server seed is the row with `active = true`. A revealed seed is never used for a new draw.
 
 ### Provably-fair draw service
 
@@ -125,7 +125,7 @@ A seeded draft (`draft-thin-margin`) is built to fail this gate so the admin scr
 
 ### Credits wallet + buyback
 
-There is no cash-out. `StubPaymentProvider` (`db/src/payments.ts`) records a `payments` row with `provider = stub` and `status = stubbed`. It never calls a processor and never charges a card.
+There is no cash-out. `stubTopUp` (`db/src/wallet.ts`) records a `payments` row with `provider = stub` and `status = stubbed`. It never calls a processor and never charges a card.
 
 Top-up credits the ledger (`funding_source = card`) and increases spendable balance immediately. A daily top-up limit is enforced (default $500 for new accounts; the demo ripper is seeded higher so the three pack prices can be exercised).
 

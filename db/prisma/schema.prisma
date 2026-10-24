@@ -1,0 +1,465 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  blocked
+  self_excluded
+  locked
+
+  @@map("user_status")
+}
+
+enum UserRole {
+  user
+  admin
+
+  @@map("user_role")
+}
+
+enum KycStatus {
+  none
+  pending
+  passed
+  failed
+
+  @@map("kyc_status")
+}
+
+enum CardStatus {
+  intake
+  available
+  allocated
+  pulled
+  shipping
+  shipped
+  bought_back
+  frozen
+
+  @@map("card_status")
+}
+
+enum CardCategory {
+  pokemon
+  baseball
+  basketball
+  football
+  one_piece
+  other
+
+  @@map("card_category")
+}
+
+enum Grader {
+  PSA
+  BGS
+  CGC
+  SGC
+
+  @@map("grader")
+}
+
+enum OwnerType {
+  house
+  supplier
+
+  @@map("owner_type")
+}
+
+enum PriceConfidence {
+  high
+  low
+
+  @@map("price_confidence")
+}
+
+enum PackStatus {
+  draft
+  live
+  paused
+  retired
+
+  @@map("pack_status")
+}
+
+enum TierName {
+  common
+  rare
+  epic
+  legendary
+  grail
+
+  @@map("tier_name")
+}
+
+enum SlotState {
+  available
+  pulled
+
+  @@map("slot_state")
+}
+
+enum FundingSource {
+  card
+  credit_buyback
+  promo
+  seed
+
+  @@map("funding_source")
+}
+
+enum LedgerDirection {
+  credit
+  debit
+
+  @@map("ledger_direction")
+}
+
+enum VaultStatus {
+  held
+  shipping
+  shipped
+  bought_back
+
+  @@map("vault_status")
+}
+
+enum BuybackStatus {
+  offered
+  completed
+  expired
+  blocked
+
+  @@map("buyback_status")
+}
+
+enum ShipmentStatus {
+  requested
+  waiting_hold
+  canceled
+
+  @@map("shipment_status")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  username      String     @unique
+  passwordHash  String     @map("password_hash")
+  dob           DateTime   @db.Date
+  state         String
+  kycStatus     KycStatus  @default(none) @map("kyc_status")
+  riskScore     Int        @default(0) @map("risk_score")
+  vipTier       Int        @default(0) @map("vip_tier")
+  clientSeed    String     @map("client_seed")
+  skipAnimation Boolean    @default(false) @map("skip_animation")
+  status        UserStatus @default(active)
+  role          UserRole   @default(user)
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  wallet     Wallet?
+  ledger     LedgerEntry[]
+  pulls      Pull[]
+  vaultItems VaultItem[]
+  buybacks   Buyback[]
+  geoChecks  GeoCheck[]
+  limit      UserLimit?
+  payments   Payment[]
+  shipments  Shipment[]
+
+  @@map("users")
+}
+
+model GeoCheck {
+  id     String   @id @default(cuid())
+  userId String?  @map("user_id")
+  state  String
+  source String
+  passed Boolean
+  reason String?
+  at     DateTime @default(now())
+  user   User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("geo_checks")
+}
+
+model UserLimit {
+  userId          String @id @map("user_id")
+  dailyLimitCents Int    @default(50000) @map("daily_limit_cents")
+  user            User   @relation(fields: [userId], references: [id])
+
+  @@map("user_limits")
+}
+
+model Wallet {
+  userId           String    @id @map("user_id")
+  availableCents   Int       @default(0) @map("available_cents")
+  heldCardCents    Int       @default(0) @map("held_card_cents")
+  buybackCents     Int       @default(0) @map("buyback_cents")
+  fundingHoldUntil DateTime? @map("funding_hold_until")
+  user             User      @relation(fields: [userId], references: [id])
+
+  @@map("wallets")
+}
+
+model LedgerEntry {
+  id             String          @id @default(cuid())
+  journalId      String          @map("journal_id")
+  account        String
+  userId         String?         @map("user_id")
+  direction      LedgerDirection
+  amountCents    Int             @map("amount_cents")
+  fundingSource  FundingSource   @map("funding_source")
+  holdUntil      DateTime?       @map("hold_until")
+  refType        String          @map("ref_type")
+  refId          String          @map("ref_id")
+  idempotencyKey String          @unique @map("idempotency_key")
+  at             DateTime        @default(now())
+  user           User?           @relation(fields: [userId], references: [id])
+
+  @@index([userId, at])
+  @@index([journalId])
+  @@map("ledger_entries")
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  provider    String
+  ref         String   @unique
+  amountCents Int      @map("amount_cents")
+  status      String
+  threeDs     Boolean  @default(false) @map("three_ds")
+  risk        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+model Card {
+  id              String          @id @default(cuid())
+  grader          Grader
+  certNumber      String          @map("cert_number")
+  grade           Decimal         @db.Decimal(3, 1)
+  category        CardCategory
+  subject         String
+  setName         String          @map("set_name")
+  year            Int
+  cardNumber      String?         @map("card_number")
+  variant         String?
+  fmvCents        Int             @map("fmv_cents")
+  priceConfidence PriceConfidence @default(high) @map("price_confidence")
+  fmvAt           DateTime        @map("fmv_at")
+  fmvSource       String          @map("fmv_source")
+  costCents       Int             @map("cost_cents")
+  ownerType       OwnerType       @default(house) @map("owner_type")
+  supplierId      String?         @map("supplier_id")
+  custodyLocation String          @map("custody_location")
+  bin             String
+  imageFrontUrl   String?         @map("image_front_url")
+  imageBackUrl    String?         @map("image_back_url")
+  status          CardStatus      @default(available)
+  example         Boolean         @default(false)
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  priceHistory PriceHistory[]
+  slots        PackSlot[]
+  vaultItems   VaultItem[]
+  events       CardEvent[]
+  pulls        Pull[]
+
+  @@unique([grader, certNumber])
+  @@index([status])
+  @@map("cards")
+}
+
+model PriceHistory {
+  id       String   @id @default(cuid())
+  cardId   String   @map("card_id")
+  fmvCents Int      @map("fmv_cents")
+  source   String
+  at       DateTime @default(now())
+  card     Card     @relation(fields: [cardId], references: [id])
+
+  @@index([cardId, at])
+  @@map("price_history")
+}
+
+model CardEvent {
+  id         String   @id @default(cuid())
+  cardId     String   @map("card_id")
+  fromStatus String?  @map("from_status")
+  toStatus   String   @map("to_status")
+  reason     String
+  at         DateTime @default(now())
+  card       Card     @relation(fields: [cardId], references: [id])
+
+  @@index([cardId, at])
+  @@map("card_events")
+}
+
+model Pack {
+  id                String     @id @default(cuid())
+  slug              String     @unique
+  name              String
+  priceCents        Int        @map("price_cents")
+  status            PackStatus @default(draft)
+  version           Int        @default(1)
+  liabilityCapCents Int        @map("liability_cap_cents")
+  description       String
+  featured          Boolean    @default(false)
+  createdAt         DateTime   @default(now()) @map("created_at")
+
+  tiers PackTier[]
+  slots PackSlot[]
+  pulls Pull[]
+
+  @@map("packs")
+}
+
+model PackTier {
+  id      String   @id @default(cuid())
+  packId  String   @map("pack_id")
+  version Int
+  tier    TierName
+  oddsBps Int      @map("odds_bps")
+  pack    Pack     @relation(fields: [packId], references: [id])
+
+  @@unique([packId, version, tier])
+  @@map("pack_tiers")
+}
+
+model PackSlot {
+  id        String    @id @default(cuid())
+  packId    String    @map("pack_id")
+  version   Int
+  tier      TierName
+  slotIndex Int       @map("slot_index")
+  cardId    String    @map("card_id")
+  state     SlotState @default(available)
+  pack      Pack      @relation(fields: [packId], references: [id])
+  card      Card      @relation(fields: [cardId], references: [id])
+
+  @@unique([packId, version, slotIndex])
+  @@index([packId, version, tier, state])
+  @@map("pack_slots")
+}
+
+model ServerSeed {
+  id         String    @id @default(cuid())
+  hash       String    @unique
+  seed       String
+  active     Boolean   @default(false)
+  activeFrom DateTime  @default(now()) @map("active_from")
+  revealedAt DateTime? @map("revealed_at")
+  pulls      Pull[]
+
+  @@map("server_seeds")
+}
+
+model Pull {
+  id               String        @id @default(cuid())
+  userId           String        @map("user_id")
+  packId           String        @map("pack_id")
+  version          Int
+  seedId           String        @map("seed_id")
+  clientSeed       String        @map("client_seed")
+  nonce            Int
+  tier             TierName
+  poolIndex        Int           @map("pool_index")
+  slotId           String        @map("slot_id")
+  cardId           String        @map("card_id")
+  fundingSource    FundingSource @map("funding_source")
+  hmac             String
+  availableSlotIds Json          @map("available_slot_ids")
+  slotListHash     String        @map("slot_list_hash")
+  idempotencyKey   String        @unique @map("idempotency_key")
+  priceCents       Int           @map("price_cents")
+  at               DateTime      @default(now())
+
+  user      User       @relation(fields: [userId], references: [id])
+  pack      Pack       @relation(fields: [packId], references: [id])
+  seed      ServerSeed @relation(fields: [seedId], references: [id])
+  card      Card       @relation(fields: [cardId], references: [id])
+  vaultItem VaultItem?
+
+  @@unique([userId, seedId, nonce])
+  @@index([userId, at])
+  @@map("pulls")
+}
+
+model VaultItem {
+  id             String      @id @default(cuid())
+  userId         String      @map("user_id")
+  cardId         String      @map("card_id")
+  pullId         String      @unique @map("pull_id")
+  status         VaultStatus @default(held)
+  shipHoldUntil  DateTime?   @map("ship_hold_until")
+  buybackBlocked Boolean     @default(false) @map("buyback_blocked")
+  fmvCentsAtPull Int         @map("fmv_cents_at_pull")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  card     Card      @relation(fields: [cardId], references: [id])
+  pull     Pull      @relation(fields: [pullId], references: [id])
+  buybacks Buyback[]
+
+  @@index([userId, status])
+  @@map("vault_items")
+}
+
+model Buyback {
+  id             String        @id @default(cuid())
+  userId         String        @map("user_id")
+  vaultItemId    String        @map("vault_item_id")
+  cardId         String        @map("card_id")
+  fmvCents       Int           @map("fmv_cents")
+  haircutBps     Int           @map("haircut_bps")
+  rateBps        Int           @map("rate_bps")
+  creditCents    Int           @map("credit_cents")
+  offerExpiresAt DateTime      @map("offer_expires_at")
+  status         BuybackStatus
+  completedAt    DateTime?     @map("completed_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  vaultItem VaultItem @relation(fields: [vaultItemId], references: [id])
+
+  @@index([vaultItemId, status])
+  @@map("buybacks")
+}
+
+model Shipment {
+  id         String         @id @default(cuid())
+  userId     String         @map("user_id")
+  status     ShipmentStatus
+  feeCents   Int            @map("fee_cents")
+  holdReason String?        @map("hold_reason")
+  cardIds    Json           @map("card_ids")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  user       User           @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("shipments")
+}
+
+model AdminAudit {
+  id       String   @id @default(cuid())
+  actorId  String?  @map("actor_id")
+  action   String
+  entity   String
+  entityId String?  @map("entity_id")
+  detail   Json?
+  at       DateTime @default(now())
+
+  @@index([at])
+  @@map("admin_audits")
+}
