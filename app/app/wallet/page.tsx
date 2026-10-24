@@ -27,7 +27,13 @@ export default async function WalletPage({
         when a rate is configured, applies when credits are spent on a card and not when credits are purchased.
       </p>
       {params.topped ? <p className="ok">Stub top-up recorded. Available balance updated. Nothing was charged.</p> : null}
-      {params.error ? <p className="error">{params.error}</p> : null}
+      {params.error ? (
+        <section className="state-panel" data-testid="topup-declined">
+          <p className="kicker">Top-up declined</p>
+          <p>{params.error}</p>
+          <p className="muted">The stub provider recorded nothing. No card was charged. The available balance is unchanged.</p>
+        </section>
+      ) : null}
       <div className="grid-3">
         <div className="ticket">
           <p className="kicker">Available</p>

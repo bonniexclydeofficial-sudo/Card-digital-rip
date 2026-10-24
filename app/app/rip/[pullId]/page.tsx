@@ -33,6 +33,7 @@ export default async function RipPage({ params }: { params: Promise<{ pullId: st
           certNumber: pull.card.certNumber,
           year: pull.card.year,
           setName: pull.card.setName,
+          category: pull.card.category,
           fmvCents: pull.card.fmvCents,
           vaultItemId: pull.vault?.id ?? null,
           creditCents: quote?.creditCents ?? null,

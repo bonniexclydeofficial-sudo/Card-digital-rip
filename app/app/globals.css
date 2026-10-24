@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Design tokens. 8pt scale: 8, 16, 24, 32, 40, 96.
+  Type: 11 kicker, 13 meta, 14 row, 16 body, 18 lede, 28 section, 40 price, 40–72 display.
+  Text gold #ffe3a1 on #07080d meets AA. Metal gold #e6c15a is for fills and slab hardware.
+*/
 :root {
   --bg: #07080d;
   --bg-2: rgba(16, 20, 28, 0.72);
@@ -10,7 +15,8 @@
   --ink: #071016;
   --cyan: #7eebf7;
   --cyan-deep: #0e7490;
-  --gold: #e6c15a;
+  --gold: #ffe3a1;
+  --gold-metal: #e6c15a;
   --gold-deep: #8a6a22;
   --muted: #c5ced6;
   --line: rgba(246, 243, 236, 0.14);
@@ -19,7 +25,7 @@
   --common: #c5ced6;
   --rare: #7eebf7;
   --epic: #b9a6ff;
-  --legendary: #e6c15a;
+  --legendary: #ffe3a1;
   --grail: #fff6df;
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
@@ -155,9 +161,10 @@ textarea { min-height: 180px; font-family: var(--font-mono), ui-monospace, monos
 .badge { font-size: 12px; letter-spacing: 0.04em; border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; color: var(--paper); }
 .odds-line { margin: 12px 0; }
 .odds-track { height: 8px; border-radius: 999px; background: rgba(246, 243, 236, 0.08); overflow: hidden; }
-.odds-fill { height: 100%; min-width: 8px; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), var(--gold)); }
+.odds-fill { height: 100%; min-width: 8px; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), var(--gold-metal)); }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
-.filters button[aria-pressed="true"] { background: var(--gold); color: var(--ink); border-color: transparent; }
+.filters .chip { background: transparent; cursor: pointer; min-height: 44px; }
+.filters button[aria-pressed="true"] { background: var(--gold-metal); color: var(--ink); border-color: transparent; }
 
 .pool { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 16px; }
 .slab-card { background: #10141c; border: 1px solid var(--line); padding: 8px; border-radius: 16px; }
@@ -186,8 +193,9 @@ textarea { min-height: 180px; font-family: var(--font-mono), ui-monospace, monos
 .assay { position: relative; height: 440px; border-left: 1px solid var(--line); }
 .assay-fill {
   position: absolute; left: -2px; bottom: 0; width: 4px;
-  background: linear-gradient(180deg, var(--gold), var(--cyan));
+  background: linear-gradient(180deg, var(--gold-metal), var(--cyan));
   box-shadow: 0 0 16px rgba(126, 235, 247, 0.65);
+  transition: none;
 }
 .assay-tick {
   position: absolute; left: 16px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
@@ -204,7 +212,7 @@ textarea { min-height: 180px; font-family: var(--font-mono), ui-monospace, monos
 }
 .seal {
   position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
-  width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--gold); display: grid; place-items: center;
+  width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--gold-metal); display: grid; place-items: center;
   font-family: var(--font-display), sans-serif; background: #10141c; color: var(--gold);
 }
 .sleeve.arm { transform: translateY(-10px) rotate(-2deg); transition: transform 640ms ease; }
@@ -212,6 +220,44 @@ textarea { min-height: 180px; font-family: var(--font-mono), ui-monospace, monos
 .decision { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
 .hold { border: 1px solid rgba(255, 143, 122, 0.65); color: var(--danger); padding: 8px 12px; font-size: 13px; border-radius: 12px; }
 .timer { font-variant-numeric: tabular-nums; color: var(--gold); }
+.demo-note {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  color: var(--paper-dim); border-color: var(--line); background: rgba(16, 20, 28, 0.55);
+  padding: 8px 12px; margin-bottom: 16px;
+}
+.demo-note .btn { min-height: 36px; padding: 6px 14px; }
+.slab-enter { animation: slab-in 780ms cubic-bezier(0.16, 0.84, 0.24, 1); transform-origin: center; }
+@keyframes slab-in {
+  from { transform: perspective(900px) rotateY(-72deg) scale(0.94); opacity: 0.2; }
+  to { transform: none; opacity: 1; }
+}
+.grade-stamp { display: inline-block; animation: stamp 420ms ease; }
+@keyframes stamp {
+  from { transform: scale(1.16); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.check-backdrop {
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: end center; padding: 16px;
+  background: rgba(0, 0, 0, 0.46);
+}
+.check-card {
+  width: min(480px, 100%); background: #10141c; border: 1px solid var(--line); border-radius: 20px; padding: 24px;
+}
+.state-panel {
+  border: 1px solid var(--line); border-radius: 20px; padding: 24px; margin: 16px 0 24px;
+  background: rgba(16, 20, 28, 0.62); max-width: 40rem;
+}
+.feed-chip { display: inline-flex; align-items: center; gap: 8px; }
+.avatar {
+  width: 28px; height: 28px; border-radius: 999px; display: inline-grid; place-items: center;
+  background: #16324a; color: var(--paper); font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+}
+.tier-chip {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--line);
+  border-radius: 999px; padding: 2px 8px;
+}
+.ticker-track { align-items: center; }
+.share-card { max-width: 440px; }
 .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .particles i {
   position: absolute; left: 50%; top: 42%; width: 7px; height: 7px; border-radius: 999px; background: var(--cyan);
@@ -252,7 +298,7 @@ th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); v
   .menu .nav { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sleeve, .assay-fill, .burst, .holo, .rarity-card::after, .ticker-track, .particles i {
+  .sleeve, .assay-fill, .burst, .holo, .rarity-card::after, .ticker-track, .particles i, .slab-enter, .grade-stamp {
     transition: none !important; animation: none !important;
   }
 }

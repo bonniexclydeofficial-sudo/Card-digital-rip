@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { advanceReveal, initialReveal, meterFillPercent, meterPositionAt, PHASE_MS, TIER_NAMES } from "../lib/reveal/machine";
+import {
+  advanceReveal,
+  initialReveal,
+  meterFillPercent,
+  meterPositionAt,
+  PHASE_MS,
+  revealBudget,
+  TIER_NAMES,
+} from "../lib/reveal/machine";
 
 describe("reveal meter", () => {
   it("never moves past the drawn tier", () => {
@@ -23,6 +31,21 @@ describe("reveal meter", () => {
       expect(seen.at(-1)?.phase).toBe("decision");
       expect(TIER_NAMES[tier]).toBeDefined();
     }
+  });
+
+  it("stretches higher tiers inside a 4 to 6 second rip and still stops on the drawn tier", () => {
+    for (const tier of [0, 1, 2, 3, 4]) {
+      const budget = revealBudget(tier);
+      const total = budget.arm + budget.meter + budget.burst + budget.slab;
+      expect(total).toBeGreaterThanOrEqual(4000);
+      expect(total).toBeLessThanOrEqual(6000);
+      expect(budget.meter).toBeGreaterThanOrEqual(PHASE_MS.meter);
+      const ceiling = tier + 1;
+      for (let ms = 0; ms <= budget.meter; ms += 40) {
+        expect(meterPositionAt(ms, budget.meter, tier)).toBeLessThanOrEqual(ceiling);
+      }
+    }
+    expect(revealBudget(4).meter).toBeGreaterThan(revealBudget(0).meter);
   });
 
   it("skip and the grail flag resolve to the drawn tier immediately", () => {

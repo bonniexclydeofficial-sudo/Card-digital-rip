@@ -8,7 +8,7 @@ import {
   initialReveal,
   meterFillPercent,
   meterPositionAt,
-  PHASE_MS,
+  revealBudget,
   TIER_NAMES,
   type RevealState,
 } from "@/lib/reveal/machine";
@@ -27,6 +27,7 @@ export interface RevealPull {
   certNumber: string;
   year: number;
   setName: string;
+  category?: string;
   fmvCents: number;
   vaultItemId: string | null;
   creditCents: number | null;
@@ -42,6 +43,22 @@ const SPARKS = Array.from({ length: 14 }, (_, index) => {
   const radius = 90 + (index % 4) * 28;
   return { dx: `${Math.cos(angle) * radius}px`, dy: `${Math.sin(angle) * radius - 20}px` };
 });
+
+function CountUp({ cents }: { cents: number }) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const start = performance.now();
+    let frame = 0;
+    const run = (now: number) => {
+      const t = Math.min(1, (now - start) / 700);
+      setValue(Math.round(cents * (1 - (1 - t) ** 3)));
+      if (t < 1) frame = requestAnimationFrame(run);
+    };
+    frame = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(frame);
+  }, [cents]);
+  return <span className="stat grade-stamp">{money(value)}</span>;
+}
 
 function OfferClock({ from }: { from: string }) {
   const [label, setLabel] = useState("72:00:00");
@@ -71,12 +88,31 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
   const [reduced, setReduced] = useState(false);
   const [heldSkip, setHeldSkip] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
+  const [seenRip, setSeenRip] = useState(false);
   const holdTimer = useRef<number | null>(null);
   const skip = pull.skip || reduced || heldSkip;
   const [state, setState] = useState<RevealState>(() =>
     initialReveal({ tier: pull.tierIndex, isGrail: pull.isGrail, skip: pull.skip }),
   );
   const [pos, setPos] = useState(pull.skip ? pull.tierIndex + 1 : 0);
+
+  useEffect(() => {
+    setSeenRip(window.sessionStorage.getItem("cdr_rip_done") === "1");
+  }, []);
+
+  useEffect(() => {
+    if (state.phase !== "arm" || !pull.certNumber) return;
+    const img = new Image();
+    const q = new URLSearchParams({
+      category: pull.category ?? "other",
+      subject: pull.subject,
+      grade: pull.grade,
+      grader: pull.grader,
+      year: String(pull.year),
+      set: pull.setName,
+    });
+    img.src = `/api/slab/${encodeURIComponent(pull.certNumber)}?${q.toString()}`;
+  }, [state.phase, pull.certNumber, pull.category, pull.subject, pull.grade, pull.grader, pull.year, pull.setName]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -99,6 +135,7 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
     let cancelled = false;
     const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+    const budget = revealBudget(pull.tierIndex);
     const run = async () => {
       const sequence = ["arm", "meter", "burst", "slab", "decision"] as const;
       for (const phase of sequence) {
@@ -107,24 +144,28 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
         setState({ ...current });
         if (phase === "meter") {
           const started = performance.now();
+          const duration = budget.meter;
           await new Promise<void>((resolve) => {
             const frame = (now: number) => {
               if (cancelled) {
                 resolve();
                 return;
               }
-              const next = meterPositionAt(now - started, PHASE_MS.meter, pull.tierIndex);
+              const next = meterPositionAt(now - started, duration, pull.tierIndex);
               setPos(next);
-              if (now - started >= PHASE_MS.meter) resolve();
+              if (now - started >= duration) resolve();
               else requestAnimationFrame(frame);
             };
             requestAnimationFrame(frame);
           });
-        } else if (PHASE_MS[phase] > 0) {
-          await wait(PHASE_MS[phase]);
+        } else if (budget[phase] > 0) {
+          await wait(budget[phase]);
         }
       }
-      if (!cancelled) setPos(current.meterCeiling);
+      if (!cancelled) {
+        setPos(current.meterCeiling);
+        window.sessionStorage.setItem("cdr_rip_done", "1");
+      }
     };
     void run();
     return () => {
@@ -142,15 +183,16 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
   }
 
   async function shareCard() {
-    const text = `${pull.subject} · ${pull.grader} ${pull.grade} · fair market ${money(pull.fmvCents)}. Separate purchase offer from Card Digital Rip.`;
+    const url = `${window.location.origin}/share/${pull.id}`;
+    const text = `${pull.subject} · ${pull.grader} ${pull.grade} · fair market ${money(pull.fmvCents)}. Example slab. ${url}`;
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title: pull.subject, text, url: window.location.href });
+        await navigator.share({ title: pull.subject, text, url });
         setShareNote("Share sheet opened.");
         return;
       }
-      await navigator.clipboard.writeText(text);
-      setShareNote("Card summary copied.");
+      await navigator.clipboard.writeText(url);
+      setShareNote("Share link copied.");
     } catch {
       setShareNote("Share closed.");
     }
@@ -196,14 +238,14 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
           </div>
         ) : null}
         <div className="decision" style={{ marginTop: 0 }}>
-          <button type="button" className="btn secondary" onClick={() => setHeldSkip(true)}>
-            Skip
+          <button type="button" className={seenRip ? "btn" : "btn secondary"} onClick={() => setHeldSkip(true)}>
+            {seenRip ? "Skip to the slab" : "Skip"}
           </button>
-          <span className="muted">Hold anywhere on the stage to skip.</span>
+          <span className="muted">Hold the stage to skip.</span>
         </div>
         {showSlab ? (
           <div aria-live="polite">
-            <div className="holo">
+            <div className="holo slab-enter">
               <Slab
                 cert={pull.certNumber}
                 subject={pull.subject}
@@ -211,12 +253,13 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
                 grader={pull.grader}
                 year={pull.year}
                 setName={pull.setName}
+                category={pull.category}
               />
             </div>
-            <p className={`kicker tier-${tierName}`}>{TIER_LABEL[tierName]}</p>
+            <p className={`kicker tier-${tierName} grade-stamp`}>{TIER_LABEL[tierName]}</p>
             <h2>{pull.subject}</h2>
             <p className="muted">
-              {pull.grader} {pull.grade} · fair market {money(pull.fmvCents)}
+              {pull.grader} {pull.grade} · fair market <CountUp cents={pull.fmvCents} />
             </p>
           </div>
         ) : state.phase === "burst" ? (
@@ -237,9 +280,15 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
                 Buy back for {pull.creditCents != null ? money(pull.creditCents) : "credits"}
               </button>
             </form>
-            <button type="button" className="btn secondary" onClick={() => void shareCard()}>
+            <a className="btn secondary" href={`/share/${pull.id}`}>
               Share card
+            </a>
+            <button type="button" className="btn secondary" onClick={() => void shareCard()}>
+              Copy link
             </button>
+            <a className="btn secondary" href="/settings#responsible">
+              Set a limit
+            </a>
             {pull.pulledAt ? <OfferClock from={pull.pulledAt} /> : (
               <p className="muted">Separate purchase offer. It expires in 72 hours. It is not a refund.</p>
             )}

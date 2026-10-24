@@ -25,13 +25,20 @@ export async function liveFeed(limit = 12) {
     where: { voided: false },
     orderBy: { at: "desc" },
     take: limit,
-    include: { user: { select: { username: true } }, pack: { select: { name: true } } },
+    include: {
+      user: { select: { username: true } },
+      pack: { select: { name: true } },
+      card: { select: { subject: true, fmvCents: true, category: true } },
+    },
   });
   return pulls.map((pull) => ({
     id: pull.id,
     username: pull.user.username,
     pack: pull.pack.name,
     tier: pull.tier,
+    subject: pull.card.subject,
+    fmvCents: pull.card.fmvCents,
+    category: pull.card.category,
     at: pull.at.toISOString(),
   }));
 }

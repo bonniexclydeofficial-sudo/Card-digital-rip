@@ -53,7 +53,7 @@ export default async function SettingsPage({
       ) : (
         <p className="muted">An admin rotates the server seed. Until then, verify shows the hash and the house check.</p>
       )}
-      <h2>Responsible play</h2>
+      <h2 id="responsible">Responsible play</h2>
       <p className="muted">
         Purchased credits do not expire and cannot be withdrawn. A lower spend limit applies now. A higher one waits 24 hours.
       </p>

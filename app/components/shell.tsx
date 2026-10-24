@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Mark } from "@/components/mark";
+import { RealityCheck } from "@/components/reality-check";
 import { logoutAction } from "@/lib/actions";
 import { money } from "@/lib/format";
 
@@ -16,10 +18,8 @@ export function Shell({ viewer, children }: { viewer: Viewer | null; children: R
       </a>
       <header className="topbar">
         <Link href="/" className="brand">
-          <span className="mark" aria-hidden="true">
-            R
-          </span>
-          Card Digital Rip
+          <Mark />
+          <span>Card Digital Rip</span>
         </Link>
         <details className="menu">
           <summary className="nav-toggle">Menu</summary>
@@ -54,6 +54,7 @@ export function Shell({ viewer, children }: { viewer: Viewer | null; children: R
         </details>
       </header>
       <main id="main" className="main">
+        <RealityCheck />
         {children}
       </main>
       <footer className="footer">

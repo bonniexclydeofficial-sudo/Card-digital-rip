@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { getCatalog, latestPull, liveFeed } from "@cdr/db";
+import { DemoNote } from "@/components/demo-note";
 import { Slab } from "@/components/slab";
 import { money, oddsLabel, TIER_LABEL } from "@/lib/format";
 
+function initials(name: string): string {
+  const parts = name.trim().split(/[^a-zA-Z0-9]+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
 export default async function HomePage() {
-  const [packs, feed, latest] = await Promise.all([getCatalog(), liveFeed(10), latestPull()]);
+  const [packs, feed, latest] = await Promise.all([getCatalog(), liveFeed(18), latestPull()]);
   const cards = packs.flatMap((pack) =>
     pack.tiers.flatMap((tier) =>
       tier.cards.map((card) => ({ ...card, tier: tier.tier, packName: pack.name, slug: pack.slug })),
@@ -17,7 +24,7 @@ export default async function HomePage() {
   const ticker = feed.length > 0 ? [...feed, ...feed] : [];
   return (
     <div>
-      <p className="banner">Example inventory. These slabs are fictional, generated from a cert, and marked EXAMPLE.</p>
+      <DemoNote />
       <p className="kicker">A vault, not a casino floor</p>
       <h1>Open the pack. Keep the slab. Or sell it back for credits.</h1>
       <p className="lede">
@@ -36,8 +43,13 @@ export default async function HomePage() {
         <div className="ticker-track">
           {ticker.length === 0 ? <span>The floor is quiet. The example verify pull is ready.</span> : null}
           {ticker.map((pull, index) => (
-            <span key={`${pull.id}-${index}`}>
-              <b>{pull.username}</b> · {pull.pack} · {TIER_LABEL[pull.tier] ?? pull.tier}
+            <span className="feed-chip" key={`${pull.id}-${index}`}>
+              <span className="avatar" aria-hidden="true">
+                {initials(pull.username)}
+              </span>
+              <b>{pull.username}</b>
+              <span className={`tier-chip tier-${pull.tier}`}>{TIER_LABEL[pull.tier] ?? pull.tier}</span>
+              <span className="muted">{pull.pack}</span>
             </span>
           ))}
         </div>
@@ -94,6 +106,7 @@ export default async function HomePage() {
                 grader={whale.grader}
                 year={whale.year}
                 setName={whale.setName}
+                category={whale.category}
                 pulled={whale.slotState !== "available"}
               />
             </div>

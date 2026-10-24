@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { noteRip } from "@/components/reality-check";
 
 export function RipButton({ slug, label, disabled }: { slug: string; label: string; disabled: boolean }) {
   const [pending, setPending] = useState(false);
@@ -21,6 +22,7 @@ export function RipButton({ slug, label, disabled }: { slug: string; label: stri
       setPending(false);
       return;
     }
+    noteRip();
     window.location.href = `/rip/${data.pullId}`;
   }
 

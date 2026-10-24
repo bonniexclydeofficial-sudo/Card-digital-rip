@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPackPage } from "@cdr/db";
+import { DemoNote } from "@/components/demo-note";
 import { PoolGrid } from "@/components/pool-grid";
 import { RipButton } from "@/components/rip-button";
 import { getSession } from "@/lib/session";
@@ -21,7 +22,24 @@ export default async function PackPage({ params }: { params: Promise<{ slug: str
   const cards = pack.tiers.flatMap((tier) => tier.cards.map((card) => ({ ...card, tier: tier.tier })));
   return (
     <div className="pack-page">
-      <p className="banner">Example inventory. Slabs are generative art from the cert. They are not photographs of real cards.</p>
+      <DemoNote />
+      {pack.status !== "live" ? (
+        <section className="state-panel" data-testid="pack-paused">
+          <p className="kicker">Paused</p>
+          <h2>This pack is resting.</h2>
+          <p>
+            Published odds stay on the page. The sleeve does not move until the pack is live again. Nothing already in a
+            vault changes.
+          </p>
+        </section>
+      ) : null}
+      {stock === 0 ? (
+        <section className="state-panel" data-testid="pack-refill">
+          <p className="kicker">Refilling</p>
+          <h2>The pool is empty.</h2>
+          <p>Every listed slab has been pulled. Odds stay published. A new rip waits until stock returns.</p>
+        </section>
+      ) : null}
       <div className="pack-top">
         <div>
           <p className="kicker">{pack.status === "live" ? "Live pack" : "Paused"}</p>
@@ -65,6 +83,7 @@ export default async function PackPage({ params }: { params: Promise<{ slug: str
                   <span className={`tier-${tier.tier}`}>{TIER_LABEL[tier.tier] ?? tier.tier}</span>
                   <span>
                     {oddsLabel(tier.oddsBps)} · {tier.stock}/{tier.total}
+                    {tier.stock === 0 ? " · Refilling" : ""}
                   </span>
                 </div>
                 <div className="odds-track" aria-hidden="true">

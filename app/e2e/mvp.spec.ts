@@ -83,6 +83,14 @@ test("the margin guard blocks the thin draft and the CSV dry run writes nothing"
   await expect(page.getByTestId("csv-report")).toContainText("Nothing was written");
 });
 
+test("a public share card shows the example slab and a verify link", async ({ page }) => {
+  await page.goto("/share/pull_example");
+  const card = page.getByTestId("share-card");
+  await expect(card).toContainText("EXAMPLE");
+  await expect(card).toContainText("Field Notes");
+  await expect(page.getByRole("link", { name: "Verify this pull" })).toHaveAttribute("href", "/verify/pull_example");
+});
+
 test("legal pages stay marked draft and state the buyback and arbitration rules", async ({ page }) => {
   await page.goto("/legal/terms");
   await expect(page.getByTestId("legal-draft")).toContainText("DRAFT");

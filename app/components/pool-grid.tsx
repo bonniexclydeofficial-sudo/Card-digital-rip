@@ -13,6 +13,7 @@ export interface PoolCard {
   grader: string;
   year: number;
   setName: string;
+  category?: string;
   fmvCents: number;
   slotState: string;
 }
@@ -29,7 +30,7 @@ export function PoolGrid({ cards }: { cards: PoolCard[] }) {
           <button
             key={name}
             type="button"
-            className="btn secondary"
+            className="chip"
             aria-pressed={filter === name}
             onClick={() => setFilter(name)}
           >
@@ -48,6 +49,7 @@ export function PoolGrid({ cards }: { cards: PoolCard[] }) {
                 grader={card.grader}
                 year={card.year}
                 setName={card.setName}
+                category={card.category}
                 pulled={card.slotState !== "available"}
               />
             </div>

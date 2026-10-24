@@ -12,7 +12,16 @@ The first UI was a brass-on-paper layout. Packs were flat tickets. Odds were tex
 - Type: Syne for headings and prices, Inter for body, IBM Plex Mono for seeds and CSV. Body text is 16px. Buttons are at least 44px tall.
 - Space: 8 / 16 / 24 / 32 / 40. Content width 1180px.
 - Surface: translucent panels, 20px radius, a soft shadow, and a grain made from a tiled radial gradient on the page background. No image filter library.
-- Motion: rarity sheen on pack cards, a hologram tilt on slabs, a CSS marquee for the pull ticker, and a 5.26s reveal (640 + 2400 + 720 + 1500). `prefers-reduced-motion` cuts those animations. Focus rings are 2px cyan.
+- Motion: rarity sheen on pack cards, a hologram tilt on slabs, a CSS marquee for the pull ticker, and a 4–6s reveal. Common is about 4.1s. Grail holds to about 5.6s. The meter duration only climbs to the drawn tier and the fill has no CSS transition, so it cannot overshoot. `prefers-reduced-motion` jumps to the slab. Focus rings are 2px cyan. Text gold is `#ffe3a1` so kickers stay AA on black. Metal gold `#e6c15a` is reserved for fills and slab hardware.
+
+## A+ pass
+
+- Slabs are one photoreal case component: cream label, grade chip, category illustration, plastic bevel, glare, diagonal EXAMPLE watermark, and a barcode on the back. Home whale, pool, reveal, vault, and the share card all use it.
+- The mark is a vault slab, in the header, `icon.svg`, and the apple touch icon.
+- The demo line is one dismissible note. Legal draft banners stay on the legal and promo pages.
+- The live feed shows initials and a tier chip. A public `/share/[pullId]` card carries the slab, pack, fair market value, verify link, and an Open Graph image.
+- A soft reality check opens after eight rips or 60 minutes in the session. The result and the settings page link to cool-off and the spend limit.
+- Empty vault, paused pack, empty pool, ship hold, top-up decline, and a refilling tier each have their own panel.
 
 ## Screens
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { buybackCreditCents } from "@cdr/econ";
 import { prisma } from "@cdr/db";
@@ -30,7 +31,16 @@ export default async function VaultPage({
       {params.bought ? <p className="ok">Bought back for {money(Number(params.bought))} in credits.</p> : null}
       {params.ship ? <p className="ok">Shipment recorded as {params.ship}.</p> : null}
       {params.error ? <p className="error">{params.error}</p> : null}
-      {items.length === 0 ? <p>The vault is empty.</p> : null}
+      {items.length === 0 ? (
+        <section className="state-panel" data-testid="vault-empty">
+          <p className="kicker">Empty vault</p>
+          <h2>Nothing is sitting here yet.</h2>
+          <p>Rip a pack and keep the slab. It lands here with a credits buyback and a ship request.</p>
+          <Link className="btn" href="/catalog">
+            See the packs
+          </Link>
+        </section>
+      ) : null}
       <div className="grid-3">
         {items.map((item) => {
           const quote = buybackCreditCents(item.card.fmvCents, item.card.priceConfidence);
@@ -45,6 +55,7 @@ export default async function VaultPage({
                   grader={item.card.grader}
                   year={item.card.year}
                   setName={item.card.setName}
+                  category={item.card.category}
                 />
               </div>
               <h2>{item.card.subject}</h2>
@@ -60,7 +71,10 @@ export default async function VaultPage({
                 <span>{item.status}</span>
               </div>
               {held ? (
-                <p className="hold">Ship hold until {item.shipHoldUntil?.toISOString().slice(0, 10)}. Buyback still works.</p>
+                <p className="hold" data-testid="ship-hold">
+                  <strong>Ship hold.</strong> Fresh card funds stay here until {item.shipHoldUntil?.toISOString().slice(0, 10)}{" "}
+                  or KYC passes. Buyback still pays credits. Shipping is a request, not a cash-out.
+                </p>
               ) : null}
               {item.status === "held" ? (
                 <div className="decision">

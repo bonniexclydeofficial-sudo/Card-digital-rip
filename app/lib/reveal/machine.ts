@@ -17,15 +17,28 @@ export interface RevealState {
   meterTier: number;
 }
 
-/** Arm + meter + burst + slab = 5.26s. The meter duration is the climb, and it stops on the drawn tier. */
+/** Baseline timing. `revealBudget` stretches higher tiers and keeps every rip inside 4–6s. */
 export const PHASE_MS: Record<RevealPhase, number> = {
   idle: 0,
-  arm: 640,
-  meter: 2400,
-  burst: 720,
-  slab: 1500,
+  arm: 560,
+  meter: 1700,
+  burst: 520,
+  slab: 1300,
   decision: 0,
 };
+
+/** Common is the short rip. Grail holds longer. The meter duration is only the climb up to the drawn tier. */
+export function revealBudget(tier: number): Record<RevealPhase, number> {
+  const step = clampTier(tier);
+  return {
+    idle: 0,
+    arm: 560 + step * 30,
+    meter: 1700 + step * 200,
+    burst: 520 + step * 60,
+    slab: 1300 + step * 90,
+    decision: 0,
+  };
+}
 
 export function clampTier(tier: number): number {
   if (!Number.isFinite(tier)) return 0;
