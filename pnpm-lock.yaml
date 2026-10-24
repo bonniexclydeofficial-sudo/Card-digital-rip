@@ -94,6 +94,15 @@ importers:
       '@cdr/fair':
         specifier: workspace:*
         version: link:../packages/fair
+      '@cdr/kyc':
+        specifier: workspace:*
+        version: link:../packages/kyc
+      '@cdr/pay':
+        specifier: workspace:*
+        version: link:../packages/pay
+      '@cdr/pricing':
+        specifier: workspace:*
+        version: link:../packages/pricing
       '@cdr/risk':
         specifier: workspace:*
         version: link:../packages/risk
@@ -111,6 +120,20 @@ importers:
   packages/econ: {}
 
   packages/fair: {}
+
+  packages/kyc: {}
+
+  packages/pay:
+    dependencies:
+      '@cdr/risk':
+        specifier: workspace:*
+        version: link:../risk
+
+  packages/pricing:
+    dependencies:
+      '@cdr/econ':
+        specifier: workspace:*
+        version: link:../econ
 
   packages/risk: {}
 

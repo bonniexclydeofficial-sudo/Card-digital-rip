@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { stockWeightedEvCents, validatePack, type PoolTier, type TierName, TIER_ORDER } from "@cdr/econ";
+import { SECOND_ADMIN_PACK_CENTS, SECOND_ADMIN_PRICE_CENTS } from "@cdr/risk";
 import type { Card, Pack, PackSlot, PackTier } from "@prisma/client";
 import { prisma } from "./client";
 import { writeAudit } from "./audit";
@@ -66,6 +67,27 @@ export async function publishPack(actorId: string, packId: string, now = new Dat
   const pack = await loadPack(packId);
   if (!pack) return { ok: false as const, code: "NOT_FOUND" as const };
   if (pack.status === "live") return { ok: true as const, already: true as const };
+  if (pack.priceCents >= SECOND_ADMIN_PACK_CENTS) {
+    const approved = await prisma.packApproval.findFirst({ where: { packId: pack.id, status: "approved" } });
+    const distinct = Boolean(approved?.approvedBy && approved.approvedBy !== approved.requestedBy);
+    if (!distinct) {
+      const pending = await prisma.packApproval.findFirst({ where: { packId: pack.id, status: "pending" } });
+      if (pending && pending.requestedBy !== actorId) {
+        await prisma.packApproval.update({
+          where: { id: pending.id },
+          data: { status: "approved", approvedBy: actorId },
+        });
+      } else {
+        if (!pending) {
+          await prisma.packApproval.create({
+            data: { packId: pack.id, requestedBy: actorId, status: "pending" },
+          });
+        }
+        await writeAudit(actorId, "pack.needs_second", "pack", pack.id, { priceCents: pack.priceCents });
+        return { ok: false as const, code: "NEEDS_SECOND" as const };
+      }
+    }
+  }
   const tiers = slotsToTiers(pack.tiers, pack.slots);
   const validation = validatePack({
     priceCents: pack.priceCents,
@@ -196,4 +218,52 @@ export async function createPackFromBuilder(
   });
 
   return { ok: true as const, packId, validation };
+}
+
+export async function proposeCardPrice(actorId: string, cardId: string, fmvCents: number, reason: string, now = new Date()) {
+  const actor = await prisma.user.findUnique({ where: { id: actorId } });
+  if (!actor || actor.role !== "admin") return { ok: false as const, code: "FORBIDDEN" as const };
+  if (!reason.trim()) return { ok: false as const, code: "VALIDATION" as const, message: "A reason is required." };
+  if (!Number.isInteger(fmvCents) || fmvCents <= 0) {
+    return { ok: false as const, code: "VALIDATION" as const, message: "Price must be a positive number of cents." };
+  }
+  const card = await prisma.card.findUnique({ where: { id: cardId } });
+  if (!card) return { ok: false as const, code: "NOT_FOUND" as const };
+  if (fmvCents > SECOND_ADMIN_PRICE_CENTS) {
+    const change = await prisma.priceChange.create({
+      data: { cardId, actorId, fmvCents, reason: reason.trim(), status: "pending" },
+    });
+    await writeAudit(actorId, "price.pending", "card", cardId, { fmvCents, changeId: change.id });
+    return { ok: true as const, pending: true as const, changeId: change.id };
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.card.update({ where: { id: cardId }, data: { fmvCents, fmvAt: now, fmvSource: "manual" } });
+    await tx.priceHistory.create({ data: { cardId, fmvCents, source: "manual" } });
+    await tx.priceChange.create({
+      data: { cardId, actorId, approverId: actorId, fmvCents, reason: reason.trim(), status: "applied" },
+    });
+    await writeAudit(actorId, "price.apply", "card", cardId, { fmvCents }, tx);
+  });
+  return { ok: true as const, pending: false as const };
+}
+
+export async function approveCardPrice(actorId: string, changeId: string, now = new Date()) {
+  const actor = await prisma.user.findUnique({ where: { id: actorId } });
+  if (!actor || actor.role !== "admin") return { ok: false as const, code: "FORBIDDEN" as const };
+  const change = await prisma.priceChange.findUnique({ where: { id: changeId } });
+  if (!change || change.status !== "pending") return { ok: false as const, code: "NOT_FOUND" as const };
+  if (change.actorId === actorId) return { ok: false as const, code: "SAME_ADMIN" as const };
+  await prisma.$transaction(async (tx) => {
+    await tx.card.update({
+      where: { id: change.cardId },
+      data: { fmvCents: change.fmvCents, fmvAt: now, fmvSource: "manual" },
+    });
+    await tx.priceHistory.create({ data: { cardId: change.cardId, fmvCents: change.fmvCents, source: "manual" } });
+    await tx.priceChange.update({
+      where: { id: change.id },
+      data: { status: "applied", approverId: actorId },
+    });
+    await writeAudit(actorId, "price.approve", "card", change.cardId, { changeId, fmvCents: change.fmvCents }, tx);
+  });
+  return { ok: true as const };
 }

@@ -9,6 +9,9 @@
   "dependencies": {
     "@cdr/econ": "workspace:*",
     "@cdr/fair": "workspace:*",
+    "@cdr/kyc": "workspace:*",
+    "@cdr/pay": "workspace:*",
+    "@cdr/pricing": "workspace:*",
     "@cdr/risk": "workspace:*",
     "@prisma/client": "^6.16.2"
   },

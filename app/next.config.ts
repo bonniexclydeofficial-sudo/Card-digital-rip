@@ -14,7 +14,7 @@ if (existsSync(envFile)) {
 }
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@cdr/econ", "@cdr/fair", "@cdr/risk", "@cdr/db"],
+  transpilePackages: ["@cdr/econ", "@cdr/fair", "@cdr/risk", "@cdr/pay", "@cdr/kyc", "@cdr/pricing", "@cdr/db"],
   poweredByHeader: false,
 };
 

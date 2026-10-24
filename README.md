@@ -2,7 +2,9 @@
 
 Week-1/2 MVP of a digital pack rip: published odds, a provably fair draw, an original reveal, credits-only buyback, a vault, an admin CSV loader, and a margin guard that blocks packs under 4% gross margin.
 
-Payments are stubbed. No card is charged. Inventory in the seed is **example** data: fictional subjects, `EX######` certs, and generative slab art. It is not a price feed and it is not a photograph of a real card.
+Payments run through test adapters. No card is charged. Inventory in the seed is **example** data: fictional subjects, `EX######` certs, and generative slab art. It is not a price feed and it is not a photograph of a real card.
+
+Legal pages under `/legal` are marked **DRAFT — pending counsel**. Oklahoma, New Jersey, Tennessee, and Louisiana stay closed until an admin opens that state's flag. Washington, Nevada, Michigan, Idaho, and Montana stay closed. A buyback is a separate purchase offer that expires in 72 hours. Purchased credits do not expire. Promotional credits are a separate balance and may expire. There is no cash withdrawal. Sales tax, when a rate is configured, applies when credits are spent on a card.
 
 The product spec is `docs/SPEC.md`. The engineering map is `docs/TECH_PLAN.md`. The spec names Drizzle; this repo uses Prisma.
 
@@ -55,13 +57,15 @@ openssl dgst -sha256 -mac HMAC -macopt hexkey:$SEED <<<"ada-client-seed:0:1"
 ## Tests
 
 ```bash
-pnpm test        # migrate, seed, vitest (economics, fairness, ledger, rip, csv, buyback)
+pnpm test        # migrate, seed, vitest
 pnpm typecheck
 pnpm e2e         # Playwright against pnpm dev; needs the seeded database and Chromium
 ```
 
 `pnpm exec playwright install chromium` once before `pnpm e2e`.
 
+Deploy notes are in `docs/DEPLOY.md`. The request guards are in `docs/SECURITY.md`. A k6 script for 200 rips/s over 5 minutes is `load/rip.js`. It is not part of `pnpm test`.
+
 ## What this slice does not do
 
-Auth.js, Google, or Apple sign-in. Real Stripe charges, 3DS, or chargeback webhooks. A Rive binary. Rip x3. Shippo labels. KYC vendor checks. A second admin approval for a $500 pack. Nightly price refresh. Licensed price feeds. k6, a metrics dashboard, or a Lighthouse gate. Marketplace, cash-out, and P2P are out of scope. See the checklist in `docs/TECH_PLAN.md`.
+Live card charges. A contracted Shippo, Persona, or MaxMind account. A licensed price feed. A Rive binary. A full k6 run against production hardware. Counsel sign-off on the draft legal pages. Cash withdrawal. See `docs/TECH_PLAN.md`.

@@ -30,6 +30,7 @@ test("under-18 and blocked-state signups stop on the restricted page", async ({ 
   await page.fill("#password", "password-ok");
   await page.fill("#dob", "2015-01-01");
   await page.selectOption("#state", "CA");
+  await page.check("#terms");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByTestId("restricted-reason")).toContainText("age");
 
@@ -39,6 +40,7 @@ test("under-18 and blocked-state signups stop on the restricted page", async ({ 
   await page.fill("#password", "password-ok");
   await page.fill("#dob", "1990-01-01");
   await page.selectOption("#state", "WA");
+  await page.check("#terms");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByTestId("restricted-reason")).toContainText("geo");
 });
@@ -79,4 +81,16 @@ test("the margin guard blocks the thin draft and the CSV dry run writes nothing"
   await page.goto("/admin/cards");
   await page.getByRole("button", { name: "Dry run" }).click();
   await expect(page.getByTestId("csv-report")).toContainText("Nothing was written");
+});
+
+test("legal pages stay marked draft and state the buyback and arbitration rules", async ({ page }) => {
+  await page.goto("/legal/terms");
+  await expect(page.getByTestId("legal-draft")).toContainText("DRAFT");
+  await expect(page.locator("body")).toContainText("72 hours");
+  await expect(page.locator("body")).toContainText("JAMS");
+  await expect(page.locator("body")).toContainText("Delaware");
+  await expect(page.locator("body")).toContainText("$250");
+  await page.goto("/legal/buyback");
+  await expect(page.locator("body")).toContainText("separate");
+  await expect(page.locator("body")).not.toContainText("jackpot");
 });

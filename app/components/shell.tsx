@@ -26,6 +26,7 @@ export function Shell({ viewer, children }: { viewer: Viewer | null; children: R
               <Link href="/vault">Vault</Link>
               <Link href="/wallet">Wallet</Link>
               <Link href="/settings">Settings</Link>
+              <Link href="/promos">Promos</Link>
               {viewer.role === "admin" ? <Link href="/admin">Admin</Link> : null}
               <span className="balance">{money(viewer.availableCents)}</span>
               <form action={logoutAction}>
@@ -47,7 +48,12 @@ export function Shell({ viewer, children }: { viewer: Viewer | null; children: R
       <main className="main">{children}</main>
       <footer className="footer">
         <span>Example inventory. Generative slabs. Credits stay in the wallet.</span>
-        <span>Payments are stubbed. No card is charged.</span>
+        <span>
+          <Link href="/legal/terms">Terms</Link> · <Link href="/legal/rules">Official Rules</Link> ·{" "}
+          <Link href="/legal/fairness">Odds</Link> · <Link href="/legal/buyback">Buyback</Link> ·{" "}
+          <Link href="/legal/privacy">Privacy</Link> · <Link href="/legal/responsible">Responsible play</Link>
+        </span>
+        <span>Test-mode payments. No card is charged.</span>
       </footer>
     </div>
   );

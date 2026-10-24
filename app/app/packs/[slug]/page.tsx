@@ -32,7 +32,7 @@ export default async function PackPage({ params }: { params: Promise<{ slug: str
             <span>{rtpLabel(pack.rtp)}</span>
           </div>
           <div className="row">
-            <span>Instant buyback</span>
+            <span>Separate purchase offer</span>
             <span data-testid="buyback-rate">{pack.buybackBps / 100}%</span>
           </div>
           <div className="row">
@@ -50,6 +50,10 @@ export default async function PackPage({ params }: { params: Promise<{ slug: str
             ))}
           </section>
           <p data-testid="fee-note">{pack.fees.note}</p>
+          <p className="muted" data-testid="tax-note">
+            Sales tax is collected when credits are spent on a card, not when credits are purchased. This demo rate is 0.
+          </p>
+          <p className="muted">The purchase offer expires 72 hours after it is made. It is not a refund.</p>
           <p className="kicker">Server seed hash</p>
           <p className="hash mono" data-testid="seed-hash">
             {pack.seedHash}

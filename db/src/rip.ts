@@ -1,8 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { Prisma, type ServerSeed, type User } from "@prisma/client";
 import { isStalePrice } from "@cdr/econ";
 import { hashSlotList, openDraw, TIER_ORDER, type TierName } from "@cdr/fair";
-import { ageDecision, assertRipAllowed, shipHoldForPull } from "@cdr/risk";
+import { ageDecision, effectiveLimit, locationDecision, minimumAge, shipHoldForPull } from "@cdr/risk";
 import { prisma } from "./client";
+import { consumePromoLots, settleExpiredPromos } from "./credits";
+import { loadStateOpenFlags } from "./flags";
 import { insertJournal, InsufficientCreditsError, lockWallet } from "./ledger";
 
 export type RipCode =
@@ -10,6 +13,8 @@ export type RipCode =
   | "GEO_BLOCKED"
   | "UNDERAGE"
   | "USER_BLOCKED"
+  | "COOL_OFF"
+  | "SPEND_LIMIT"
   | "INSUFFICIENT_CREDITS"
   | "PACK_NOT_FOUND"
   | "PACK_PAUSED"
@@ -73,6 +78,7 @@ async function executeRip(input: {
   requestGeoState?: string | null;
   now: Date;
   pullId?: string;
+  batchId?: string;
 }): Promise<RipResult> {
   const run = () =>
     prisma.$transaction(
@@ -116,6 +122,7 @@ async function ripTransaction(
     idempotencyKey: string;
     now: Date;
     pullId?: string;
+    batchId?: string;
   },
 ): Promise<RipResult> {
   await tx.$queryRaw`SELECT id FROM packs WHERE id = ${input.packId} FOR UPDATE`;
@@ -131,9 +138,11 @@ async function ripTransaction(
     return replayOf(existing);
   }
 
+  await settleExpiredPromos(tx, input.user.id, input.now);
   const wallet = await lockWallet(tx, input.user.id);
   let held = wallet.held_card_cents;
   let buyback = wallet.buyback_cents;
+  let promo = wallet.promo_cents;
   const holdExpired = wallet.funding_hold_until != null && wallet.funding_hold_until <= input.now;
   if (holdExpired) {
     held = 0;
@@ -144,6 +153,20 @@ async function ripTransaction(
   }
   if (wallet.available_cents < pack.priceCents) {
     return fail("INSUFFICIENT_CREDITS", "Not enough credits for this pack.");
+  }
+  const dayStart = new Date(Date.UTC(input.now.getUTCFullYear(), input.now.getUTCMonth(), input.now.getUTCDate()));
+  const spentToday = await tx.pull.aggregate({
+    where: { userId: input.user.id, at: { gte: dayStart }, voided: false },
+    _sum: { priceCents: true },
+  });
+  const spendLimit = effectiveLimit({
+    currentCents: input.user.spendLimitCents,
+    pendingCents: input.user.pendingSpendLimitCents,
+    pendingAt: input.user.pendingSpendLimitAt,
+    now: input.now,
+  });
+  if ((spentToday._sum.priceCents ?? 0) + pack.priceCents > spendLimit) {
+    return fail("SPEND_LIMIT", "This rip is above the daily spend limit.");
   }
 
   const slots = await tx.packSlot.findMany({
@@ -192,9 +215,10 @@ async function ripTransaction(
   });
   if (claimed.count !== 1) throw new RetryableDraw();
 
-  const useHeld = Math.min(held, pack.priceCents);
-  const useBuyback = Math.min(buyback, pack.priceCents - useHeld);
-  const fundingSource = useHeld > 0 ? "card" : useBuyback > 0 ? "credit_buyback" : "seed";
+  const usePromo = Math.min(promo, pack.priceCents);
+  const useHeld = Math.min(held, pack.priceCents - usePromo);
+  const useBuyback = Math.min(buyback, pack.priceCents - usePromo - useHeld);
+  const fundingSource = usePromo > 0 ? "promo" : useHeld > 0 ? "card" : useBuyback > 0 ? "credit_buyback" : "seed";
   const shipHoldUntil = shipHoldForPull({
     usedHeldCardCents: useHeld,
     fundingHoldUntil: holdExpired ? null : wallet.funding_hold_until,
@@ -220,9 +244,11 @@ async function ripTransaction(
       slotListHash: hashSlotList(pool.map((item) => item.id)),
       idempotencyKey: input.idempotencyKey,
       priceCents: pack.priceCents,
+      batchId: input.batchId ?? null,
     },
   });
 
+  await consumePromoLots(tx, input.user.id, usePromo, input.now);
   await insertJournal(tx, {
     userId: input.user.id,
     direction: "debit",
@@ -237,6 +263,7 @@ async function ripTransaction(
     data: {
       heldCardCents: held - useHeld,
       buybackCents: buyback - useBuyback,
+      promoCents: promo - usePromo,
     },
   });
   await tx.card.update({ where: { id: slot.cardId }, data: { status: "pulled" } });
@@ -271,6 +298,9 @@ async function prepare(input: {
   packSlug: string;
   idempotencyKey: string;
   requestGeoState?: string | null;
+  ipState?: string | null;
+  billingState?: string | null;
+  vpn?: boolean;
   now: Date;
 }): Promise<{ user: User; packId: string } | RipResult> {
   if (!/^[A-Za-z0-9:_-]{8,80}$/.test(input.idempotencyKey)) {
@@ -279,9 +309,20 @@ async function prepare(input: {
   const user = await prisma.user.findUnique({ where: { id: input.userId } });
   if (!user) return fail("UNAUTHENTICATED", "Sign in required.");
   if (user.status !== "active") return fail("USER_BLOCKED", "This account cannot rip.");
-  const age = ageDecision(user.dob, input.now);
+  if (user.coolOffUntil && user.coolOffUntil > input.now) {
+    return fail("COOL_OFF", "This account is in a cool-off period.");
+  }
+  const age = ageDecision(user.dob, input.now, minimumAge(user.state));
   if (!age.allowed) return fail("UNDERAGE", age.reason ?? "Age requirement not met.");
-  const geo = assertRipAllowed(user.state, input.requestGeoState);
+  const open = await loadStateOpenFlags();
+  const geo = locationDecision({
+    accountState: user.state,
+    requestState: input.requestGeoState,
+    ipState: input.ipState,
+    billingState: input.billingState ?? user.billingState,
+    vpn: input.vpn,
+    open,
+  });
   await prisma.geoCheck.create({
     data: {
       userId: user.id,
@@ -308,13 +349,19 @@ async function prepare(input: {
   return { user, packId: pack.id };
 }
 
-export async function ripPack(input: {
+export interface RipInput {
   userId: string;
   packSlug: string;
   idempotencyKey: string;
   requestGeoState?: string | null;
+  ipState?: string | null;
+  billingState?: string | null;
+  vpn?: boolean;
   now?: Date;
-}): Promise<RipResult> {
+  batchId?: string;
+}
+
+export async function ripPack(input: RipInput): Promise<RipResult> {
   const now = input.now ?? new Date();
   const ready = await prepare({ ...input, now });
   if ("ok" in ready) return ready;
@@ -327,7 +374,23 @@ export async function ripPack(input: {
     idempotencyKey: input.idempotencyKey,
     requestGeoState: input.requestGeoState,
     now,
+    batchId: input.batchId,
   });
+}
+
+export async function ripSequence(input: RipInput & { count: 1 | 3 | 5 }): Promise<{ batchId: string; results: RipResult[] }> {
+  const batchId = input.batchId ?? randomUUID();
+  const results: RipResult[] = [];
+  for (let index = 0; index < input.count; index++) {
+    const result = await ripPack({
+      ...input,
+      batchId,
+      idempotencyKey: `${input.idempotencyKey}:${index}`,
+    });
+    results.push(result);
+    if (!result.ok) break;
+  }
+  return { batchId, results };
 }
 
 /** Draws against a specific unrevealed seed. Tests and the seeded example pull use this. */
@@ -338,7 +401,11 @@ export async function ripWithSeed(input: {
   idempotencyKey: string;
   pullId?: string;
   requestGeoState?: string | null;
+  ipState?: string | null;
+  billingState?: string | null;
+  vpn?: boolean;
   now?: Date;
+  batchId?: string;
 }): Promise<RipResult> {
   const now = input.now ?? new Date();
   const ready = await prepare({ ...input, now });
@@ -352,5 +419,6 @@ export async function ripWithSeed(input: {
     idempotencyKey: input.idempotencyKey,
     now,
     pullId: input.pullId,
+    batchId: input.batchId,
   });
 }

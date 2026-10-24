@@ -274,8 +274,8 @@ Boxes mark this repo, not the whole company launch. Week 3–4 items are listed 
 - [x] Geo re-checked on the rip path (`x-geo-state` stub, not MaxMind)
 - [x] Ledger property test, immutability trigger, `ledger_app` without UPDATE/DELETE
 - [x] `packages/econ` GM% and RTP* match §5.3 within 0.1 pt
-- [ ] Auth.js email OTP, Google, Apple (password session only for now)
-- [ ] Real payments (intentionally stubbed)
+- [x] Email OTP, Google/Apple test-identity linking, and a credentials route on `/api/auth`. Live Google and Apple apps still need client credentials. Password sessions remain the demo login.
+- [ ] Real payments (test adapters only; no charge)
 
 ### Week 2 — Packs, fairness, rip
 
@@ -286,30 +286,30 @@ Boxes mark this repo, not the whole company launch. Week 3–4 items are listed 
 - [x] Verify recomputes pulls (100 in integration, example pull in the UI)
 - [x] Reveal state machine: meter never exceeds the drawn tier
 - [ ] Rive file under 300 KB and a Pixel 6a 60 fps trace (original CSS/SVG ships instead)
-- [ ] Rip x3 sequential open
+- [x] Rip x3 and x5 sequential open, one idempotency key per rip in the batch
 
 ### Week 3 — Buyback, ship, fraud, admin
 
-- [x] Buyback = floor(FMV × haircut × rate); expiry enforced; blocked on dispute flag
+- [x] Buyback = floor(FMV × haircut × rate); 72-hour separate purchase offer; blocked on dispute flag
 - [x] Funding hold: fresh card funds can rip, cannot ship cleanly before hold/KYC
 - [x] CSV validation, dry-run writes nothing, atomic commit
 - [x] Margin guard blocks publish under 4%
-- [ ] Chargeback webhook: lock, reverse credits, recall unshipped (needs a processor)
-- [ ] Nightly price refresh and auto-pause on a > 10% drop
-- [ ] Shippo test label, SLA timer, fulfillment queue
-- [ ] Deposit-limit increase delayed 24h; self-exclusion blocks rip end-to-end in the UI
+- [x] Chargeback webhook: lock, claw back credits, recall unshipped card-funded items (test processor, no charge)
+- [x] Nightly price refresh adapter and auto-pause on a > 10% drop or a pack that leaves the band
+- [x] Shippo test label, 2-business-day SLA, insurance flag
+- [x] Spend-limit increase delayed 24h; cool-off and self-exclusion block a rip
 - [ ] Licensed price feed (Card Ladder / Alt / PriceCharting)
 
 ### Week 4 — Polish and launch gates
 
 - [ ] Final Rive, image prefetch budget, reduced-motion already stubbed in CSS
-- [ ] KYC sandbox at the §11 thresholds
-- [ ] Second-admin approve for publishing a ≥ $500 pack
-- [ ] Every admin mutation already writes `admin_audits` for CSV and pack publish; extend to the rest
-- [ ] k6 at 200 rips/s
-- [ ] §20 metrics dashboard
-- [ ] Lighthouse mobile ≥ 85 as a gate
+- [x] KYC sandbox (Persona/Sumsub style) at the top-up, shipment, and VIP thresholds
+- [x] Second-admin approve for publishing a ≥ $500 pack and for a manual price above $1,000
+- [x] Audit log covers flags, prices, refunds, chargebacks, seed rotation, and self-exclusion
+- [x] k6 script at `load/rip.js` (200 rips/s for 5 minutes). Not executed as a 5-minute soak in CI.
+- [x] Admin metrics dashboard and a live rip feed
+- [x] Lighthouse mobile on `/packs/pack-100` against the production server: performance 96, accessibility 100. Not wired into CI.
 
 ### Explicitly out of this repo
 
-Phase 2 marketplace, rip rooms, P2P, VRF, cash-out, $10K tier, turbo buyback, volatility modes, VIP perks, crypto. Counsel, processor approval, custody contract, and insurance are launch gates in §23, not code.
+Phase 2 marketplace, rip rooms, P2P, VRF, cash-out, volatility modes, and crypto. The $10K tier, turbo buyback, and VIP perks exist behind flags that default off. Counsel, processor approval, custody contract, and insurance are launch gates, not code. Legal positions for the draft pages live in `legal/LEGAL_POSITIONS.md`.

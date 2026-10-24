@@ -18,12 +18,14 @@ import type { TierName } from "@cdr/econ";
 import { clearSession, getSession, setSession } from "./session";
 
 export async function signupAction(formData: FormData) {
+  if (formData.get("terms") !== "on") redirect("/signup?error=Accept%20the%20terms%20to%20open%20an%20account.");
   const result = await registerUser({
     email: String(formData.get("email") ?? ""),
     username: String(formData.get("username") ?? ""),
     password: String(formData.get("password") ?? ""),
     dob: String(formData.get("dob") ?? ""),
     state: String(formData.get("state") ?? ""),
+    termsAccepted: true,
   });
   if (!result.ok && result.code === "UNDERAGE") redirect("/restricted?reason=age");
   if (!result.ok && result.code === "GEO_BLOCKED") redirect("/restricted?reason=geo");
@@ -77,6 +79,8 @@ export async function settingsAction(formData: FormData) {
   const result = await updatePlayerSettings(session.uid, {
     clientSeed: String(formData.get("clientSeed") ?? ""),
     skipAnimation: formData.get("skipAnimation") === "on",
+    haptics: formData.get("haptics") === "on",
+    muteSound: formData.get("muteSound") === "on",
   });
   if (!result.ok) redirect(`/settings?error=${encodeURIComponent(result.message)}`);
   redirect("/settings?saved=1");

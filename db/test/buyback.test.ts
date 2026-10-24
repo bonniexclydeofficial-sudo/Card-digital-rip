@@ -19,7 +19,11 @@ describe("buyback", () => {
     const opened = await openBuyback(userId, vault.id, now);
     expect(opened.ok).toBe(true);
     if (!opened.ok) return;
-    const expired = await acceptBuyback(userId, opened.offer.id, new Date(now.getTime() + 11 * 60 * 1000));
+    const expired = await acceptBuyback(
+      userId,
+      opened.offer.id,
+      new Date(now.getTime() + 72 * 60 * 60 * 1000 + 60 * 1000),
+    );
     expect(expired.ok).toBe(false);
     if (!expired.ok) expect(expired.code).toBe("EXPIRED");
     expect((await prisma.wallet.findUniqueOrThrow({ where: { userId } })).availableCents).toBe(1_000_000 - 100);

@@ -22,7 +22,9 @@ export default async function WalletPage({
       <h1>Credits</h1>
       <p className="lede">
         Top-ups are recorded by the stub provider. No card is charged. New card credits can be spent on rips immediately, and
-        they carry a funding hold that blocks a clean ship until the hold ends or KYC passes. Credits cannot be withdrawn.
+        they carry a funding hold that blocks a clean ship until the hold ends or KYC passes. Credits cannot be withdrawn
+        as cash. Purchased credits do not expire. Promotional credits are a separate balance and may expire. Sales tax,
+        when a rate is configured, applies when credits are spent on a card and not when credits are purchased.
       </p>
       {params.topped ? <p className="ok">Stub top-up recorded. Available balance updated. Nothing was charged.</p> : null}
       {params.error ? <p className="error">{params.error}</p> : null}
@@ -41,6 +43,11 @@ export default async function WalletPage({
         <div className="ticket">
           <p className="kicker">Buyback credits in balance</p>
           <p className="price">{money(wallet?.buybackCents ?? 0)}</p>
+        </div>
+        <div className="ticket">
+          <p className="kicker">Promotional credits</p>
+          <p className="price">{money(wallet?.promoCents ?? 0)}</p>
+          <p className="muted">Spent first. May expire. No cash value.</p>
         </div>
       </div>
       <h2>Add credits</h2>

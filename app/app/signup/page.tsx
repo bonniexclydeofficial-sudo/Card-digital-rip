@@ -31,6 +31,10 @@ export default async function SignupPage({
             </option>
           ))}
         </select>
+        <label>
+          <input id="terms" name="terms" type="checkbox" required /> I agree to the draft Terms, including Delaware law and
+          individual JAMS arbitration, and I can opt out within 30 days.
+        </label>
         <div className="decision">
           <button className="btn" type="submit">
             Create account

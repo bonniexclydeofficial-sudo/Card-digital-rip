@@ -4,7 +4,7 @@ import { writeAudit } from "./audit";
 
 export async function updatePlayerSettings(
   userId: string,
-  input: { clientSeed?: string; skipAnimation?: boolean },
+  input: { clientSeed?: string; skipAnimation?: boolean; haptics?: boolean; muteSound?: boolean },
 ) {
   if (input.clientSeed != null && !/^[A-Za-z0-9_-]{1,64}$/.test(input.clientSeed)) {
     return { ok: false as const, message: "Client seed must be 1–64 letters, numbers, _ or -." };
@@ -14,6 +14,8 @@ export async function updatePlayerSettings(
     data: {
       ...(input.clientSeed != null ? { clientSeed: input.clientSeed } : {}),
       ...(input.skipAnimation != null ? { skipAnimation: input.skipAnimation } : {}),
+      ...(input.haptics != null ? { haptics: input.haptics } : {}),
+      ...(input.muteSound != null ? { muteSound: input.muteSound } : {}),
     },
   });
   return { ok: true as const };

@@ -126,6 +126,7 @@ enum VaultStatus {
   shipping
   shipped
   bought_back
+  recalled
 
   @@map("vault_status")
 }
@@ -142,6 +143,10 @@ enum BuybackStatus {
 enum ShipmentStatus {
   requested
   waiting_hold
+  labeled
+  in_transit
+  delivered
+  exception
   canceled
 
   @@map("shipment_status")
@@ -158,8 +163,22 @@ model User {
   riskScore     Int        @default(0) @map("risk_score")
   vipTier       Int        @default(0) @map("vip_tier")
   clientSeed    String     @map("client_seed")
-  skipAnimation Boolean    @default(false) @map("skip_animation")
-  status        UserStatus @default(active)
+  skipAnimation          Boolean    @default(false) @map("skip_animation")
+  haptics                Boolean    @default(false)
+  muteSound              Boolean    @default(false) @map("mute_sound")
+  billingState           String?    @map("billing_state")
+  failedLogins           Int        @default(0) @map("failed_logins")
+  lockedUntil            DateTime?  @map("locked_until")
+  coolOffUntil           DateTime?  @map("cool_off_until")
+  emailVerifiedAt        DateTime?  @map("email_verified_at")
+  termsAcceptedAt        DateTime?  @map("terms_accepted_at")
+  arbitrationOptOutAt    DateTime?  @map("arbitration_opt_out_at")
+  referralCode           String?    @unique @map("referral_code")
+  referredById           String?    @map("referred_by_id")
+  spendLimitCents        Int        @default(50000) @map("spend_limit_cents")
+  pendingSpendLimitCents Int?       @map("pending_spend_limit_cents")
+  pendingSpendLimitAt    DateTime?  @map("pending_spend_limit_at")
+  status                 UserStatus @default(active)
   role          UserRole   @default(user)
   createdAt     DateTime   @default(now()) @map("created_at")
 
@@ -191,9 +210,11 @@ model GeoCheck {
 }
 
 model UserLimit {
-  userId          String @id @map("user_id")
-  dailyLimitCents Int    @default(50000) @map("daily_limit_cents")
-  user            User   @relation(fields: [userId], references: [id])
+  userId                 String    @id @map("user_id")
+  dailyLimitCents        Int       @default(50000) @map("daily_limit_cents")
+  pendingDailyLimitCents Int?      @map("pending_daily_limit_cents")
+  pendingLimitAt         DateTime? @map("pending_limit_at")
+  user                   User      @relation(fields: [userId], references: [id])
 
   @@map("user_limits")
 }
@@ -203,6 +224,7 @@ model Wallet {
   availableCents   Int       @default(0) @map("available_cents")
   heldCardCents    Int       @default(0) @map("held_card_cents")
   buybackCents     Int       @default(0) @map("buyback_cents")
+  promoCents       Int       @default(0) @map("promo_cents")
   fundingHoldUntil DateTime? @map("funding_hold_until")
   user             User      @relation(fields: [userId], references: [id])
 
@@ -236,9 +258,14 @@ model Payment {
   ref         String   @unique
   amountCents Int      @map("amount_cents")
   status      String
-  threeDs     Boolean  @default(false) @map("three_ds")
-  risk        String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  threeDs         Boolean  @default(false) @map("three_ds")
+  threeDsStatus   String?  @map("three_ds_status")
+  processor       String   @default("stub")
+  idempotencyKey  String?  @unique @map("idempotency_key")
+  reserveCents    Int      @default(0) @map("reserve_cents")
+  refundedCents   Int      @default(0) @map("refunded_cents")
+  risk            String?
+  createdAt       DateTime @default(now()) @map("created_at")
   user        User     @relation(fields: [userId], references: [id])
 
   @@map("payments")
@@ -383,6 +410,8 @@ model Pull {
   slotListHash     String        @map("slot_list_hash")
   idempotencyKey   String        @unique @map("idempotency_key")
   priceCents       Int           @map("price_cents")
+  batchId          String?       @map("batch_id")
+  voided           Boolean       @default(false)
   at               DateTime      @default(now())
 
   user      User       @relation(fields: [userId], references: [id])
@@ -442,13 +471,180 @@ model Shipment {
   userId     String         @map("user_id")
   status     ShipmentStatus
   feeCents   Int            @map("fee_cents")
-  holdReason String?        @map("hold_reason")
-  cardIds    Json           @map("card_ids")
-  createdAt  DateTime       @default(now()) @map("created_at")
+  holdReason      String?        @map("hold_reason")
+  cardIds         Json           @map("card_ids")
+  trackingNumber  String?        @map("tracking_number")
+  trackingUrl     String?        @map("tracking_url")
+  labelUrl        String?        @map("label_url")
+  carrier         String?
+  insured         Boolean        @default(true)
+  insuranceCents  Int            @default(0) @map("insurance_cents")
+  signature       Boolean        @default(false)
+  slaDueAt        DateTime?      @map("sla_due_at")
+  addressLine     String?        @map("address_line")
+  city            String?
+  region          String?
+  postal          String?
+  country         String?        @default("US")
+  createdAt       DateTime       @default(now()) @map("created_at")
   user       User           @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@map("shipments")
+}
+
+model FeatureFlag {
+  key     String  @id
+  enabled Boolean @default(false)
+
+  @@map("feature_flags")
+}
+
+model LoginCode {
+  id        String    @id @default(cuid())
+  email     String
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  attempts  Int       @default(0)
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([email, createdAt])
+  @@map("login_codes")
+}
+
+model OAuthAccount {
+  id                String @id @default(cuid())
+  userId            String @map("user_id")
+  provider          String
+  providerAccountId String @map("provider_account_id")
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model PromoCredit {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  remainingCents Int      @map("remaining_cents")
+  expiresAt      DateTime @map("expires_at")
+  source         String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([userId, expiresAt])
+  @@map("promo_credits")
+}
+
+model WebhookEvent {
+  id        String   @id
+  processor String
+  type      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("webhook_events")
+}
+
+model Dispute {
+  id         String   @id @default(cuid())
+  paymentId  String   @unique @map("payment_id")
+  userId     String   @map("user_id")
+  status     String
+  reason     String
+  evidence   Json?
+  clawbackCents Int   @default(0) @map("clawback_cents")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("disputes")
+}
+
+model ReserveLot {
+  id          String    @id @default(cuid())
+  paymentId   String    @map("payment_id")
+  amountCents Int       @map("amount_cents")
+  releaseAt   DateTime  @map("release_at")
+  releasedAt  DateTime? @map("released_at")
+
+  @@index([releaseAt])
+  @@map("reserve_lots")
+}
+
+model PackApproval {
+  id          String    @id @default(cuid())
+  packId      String    @map("pack_id")
+  requestedBy String    @map("requested_by")
+  approvedBy  String?   @map("approved_by")
+  status      String
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([packId, status])
+  @@map("pack_approvals")
+}
+
+model PriceChange {
+  id         String   @id @default(cuid())
+  cardId     String   @map("card_id")
+  actorId    String   @map("actor_id")
+  approverId String?  @map("approver_id")
+  fmvCents   Int      @map("fmv_cents")
+  reason     String
+  status     String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([cardId, createdAt])
+  @@map("price_changes")
+}
+
+model Promo {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  status    String   @default("open")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  entries AmoeEntry[]
+
+  @@map("promos")
+}
+
+model AmoeEntry {
+  id        String   @id @default(cuid())
+  promoId   String   @map("promo_id")
+  email     String
+  state     String
+  source    String
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  promo     Promo    @relation(fields: [promoId], references: [id])
+
+  @@unique([promoId, email, source])
+  @@map("amoe_entries")
+}
+
+model Referral {
+  id           String   @id @default(cuid())
+  referrerId   String   @map("referrer_id")
+  refereeId    String   @unique @map("referee_id")
+  code         String
+  disclosed    Boolean
+  rewardCents  Int      @map("reward_cents")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([code])
+  @@map("referrals")
+}
+
+model KycInquiry {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  vendor      String
+  inquiryId   String   @unique @map("inquiry_id")
+  status      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("kyc_inquiries")
 }
 
 model AdminAudit {

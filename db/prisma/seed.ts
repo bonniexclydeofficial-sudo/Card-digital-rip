@@ -20,6 +20,19 @@ async function main() {
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
       admin_audits,
+      disputes,
+      reserve_lots,
+      webhook_events,
+      kyc_inquiries,
+      referrals,
+      amoe_entries,
+      promos,
+      price_changes,
+      pack_approvals,
+      promo_credits,
+      login_codes,
+      oauth_accounts,
+      feature_flags,
       shipments,
       buybacks,
       vault_items,
@@ -191,6 +204,18 @@ async function main() {
       wallet: { create: {} },
       limit: { create: { dailyLimitCents: 50_000 } },
     },
+  });
+
+  await prisma.featureFlag.createMany({
+    data: [
+      { key: "state_open_OK", enabled: false },
+      { key: "state_open_NJ", enabled: false },
+      { key: "state_open_TN", enabled: false },
+      { key: "state_open_LA", enabled: false },
+      { key: "tier_10k", enabled: false },
+      { key: "turbo_buyback", enabled: false },
+      { key: "vip", enabled: false },
+    ],
   });
 
   await prisma.$transaction((tx) =>

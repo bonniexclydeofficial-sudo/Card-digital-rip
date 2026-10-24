@@ -28,7 +28,7 @@ function present(pack: FullPack, seed: ServerSeed | null) {
     fees: {
       purchaseFeeCents: 0,
       shipFlatCents: SHIP_FLAT_CENTS,
-      note: "No purchase fee. Shipping is $7.99 later, not charged when you rip. Credits cannot be withdrawn.",
+      note: "No purchase fee. Shipping is $7.99 later, not charged when you rip. Credits cannot be withdrawn. Purchased credits do not expire. Promotional credits are tracked separately and may expire. The buyback is a separate purchase offer that expires in 72 hours.",
     },
     tiers: tiers.map((tier) => ({
       tier: tier.tier,

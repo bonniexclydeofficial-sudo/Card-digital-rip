@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
-import { ageDecision, DEFAULT_DAILY_TOPUP_CENTS, geoDecision } from "@cdr/risk";
+import { ageDecision, DEFAULT_DAILY_TOPUP_CENTS, geoDecision, minimumAge } from "@cdr/risk";
 import { prisma } from "./client";
+import { loadStateOpenFlags } from "./flags";
+import { clearFailedLogins, noteFailedLogin } from "./identity";
 import { hashPassword, verifyPassword } from "./password";
 
 export interface RegisterInput {
@@ -10,6 +12,7 @@ export interface RegisterInput {
   dob: string;
   state: string;
   now?: Date;
+  termsAccepted?: boolean;
 }
 
 export type RegisterResult =
@@ -41,7 +44,7 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   const dob = parseDob(input.dob);
   if (!dob) return { ok: false, code: "VALIDATION", message: "Enter a real date of birth." };
 
-  const age = ageDecision(dob, now);
+  const age = ageDecision(dob, now, minimumAge(input.state));
   if (!age.allowed) {
     await prisma.geoCheck.create({
       data: { state: input.state.trim().toUpperCase() || "??", source: "signup", passed: false, reason: "underage" },
@@ -49,7 +52,7 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
     return { ok: false, code: "UNDERAGE", message: age.reason ?? "You must be 18 or older." };
   }
 
-  const geo = geoDecision(input.state);
+  const geo = geoDecision(input.state, await loadStateOpenFlags());
   if (!geo.allowed) {
     await prisma.geoCheck.create({
       data: {
@@ -73,6 +76,7 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
       dob,
       state: geo.state!,
       clientSeed: randomBytes(16).toString("hex"),
+      termsAcceptedAt: input.termsAccepted ? now : null,
       wallet: { create: {} },
       limit: { create: { dailyLimitCents: DEFAULT_DAILY_TOPUP_CENTS } },
       geoChecks: { create: { state: geo.state!, source: "signup", passed: true, reason: null } },
@@ -81,9 +85,15 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   return { ok: true, userId: user.id, role: user.role };
 }
 
-export async function authenticate(email: string, password: string) {
+export async function authenticate(email: string, password: string, now = new Date()) {
   const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
-  if (!user || !verifyPassword(password, user.passwordHash)) return null;
+  if (!user) return null;
+  if (user.lockedUntil && user.lockedUntil > now) return null;
+  if (!verifyPassword(password, user.passwordHash)) {
+    await noteFailedLogin(user.id, now);
+    return null;
+  }
   if (user.status === "blocked" || user.status === "locked") return null;
+  if (user.failedLogins > 0 || user.lockedUntil) await clearFailedLogins(user.id);
   return user;
 }

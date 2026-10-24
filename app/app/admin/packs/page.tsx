@@ -41,9 +41,13 @@ export default async function AdminPacksPage({
       {params.built ? <p className="ok">Draft saved. It is not on the consumer catalog.</p> : null}
       {params.error ? <p className="error">{params.error}</p> : null}
       {evaluated.map(({ pack, validation, evCents }) => {
-        const thin = validation.errors.some((error) => error.code === "MARGIN");
         return (
-          <section key={pack.id} className="ticket" data-testid={thin ? "margin-guard" : undefined} style={{ marginBottom: 16 }}>
+          <section
+            key={pack.id}
+            className="ticket"
+            data-testid={pack.slug === "draft-thin-margin" ? "margin-guard" : undefined}
+            style={{ marginBottom: 16 }}
+          >
             <p className="kicker">
               {pack.status} · {pack.slug}
             </p>

@@ -248,6 +248,21 @@ Card status: `intake → available → allocated → pulled → (shipping → sh
 - **Money transmission:** stored credits non-withdrawable → likely not MSB, confirm ⚖️. Cash-out would change this.
 - **Payments plan:** apply to Stripe with full description + odds page; in parallel apply to 1–2 high-risk-friendly acquirers (e.g. via NMI/Authorize.net gateway ISOs, Nuvei, Paysafe). Code against `PaymentProvider` interface. Model 5–10% rolling reserve and 2–4 week approval timeline; launch date depends on approval.
 - **Tax:** sales tax on credit purchase vs delivery; breakage treatment (CPA).
+- **ToS teardown additions (2026-10-24, see legal/TOS_TEARDOWN.md):**
+  - free AMOE entry with equal odds for promos (packs pending counsel)
+  - buyback framed as a "separate optional offer" with an expiry window
+  - error-void clause
+  - inventory-shortfall termination
+  - "animations entertainment only"
+  - title passes at shipment
+  - insolvency return clause
+  - age = max(18, age of majority) (AL/NE 19, MS 21)
+  - chargeback voids outcomes and claws back credits
+  - VPN ban in ToS
+  - referral FTC disclosure
+  - credit expiry only per state gift-card/escheat law
+  - JAMS arbitration with class waiver and 30-day opt-out
+  - NY/FL excluded from promos
 - **Privacy:** CCPA, PII encrypted, KYC docs held by vendor.
 
 ## 19. Stack

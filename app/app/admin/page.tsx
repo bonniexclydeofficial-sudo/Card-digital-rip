@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@cdr/db";
+import { dashboardMetrics, prisma, recentAudits } from "@cdr/db";
+import { money } from "@/lib/format";
 import { getSession } from "@/lib/session";
 
 export default async function AdminPage() {
@@ -8,11 +9,39 @@ export default async function AdminPage() {
   if (!session) redirect("/login");
   const user = await prisma.user.findUnique({ where: { id: session.uid } });
   if (!user || user.role !== "admin") redirect("/catalog");
+  const metrics = await dashboardMetrics();
+  const audits = await recentAudits(8);
   return (
     <div>
       <p className="kicker">Admin</p>
-      <h1>Loader and guard</h1>
-      <p className="lede">CSV intake and the pack margin guard. Every publish attempt is written to the audit log.</p>
+      <h1>Operations</h1>
+      <p className="lede">Test-mode payments, margin guard, and the audit log. No card is charged from this dashboard.</p>
+      <div className="grid-3">
+        <div className="ticket">
+          <p className="kicker">Accounts</p>
+          <p className="price">{metrics.users}</p>
+        </div>
+        <div className="ticket">
+          <p className="kicker">Rips today</p>
+          <p className="price">{metrics.pullsToday}</p>
+        </div>
+        <div className="ticket">
+          <p className="kicker">Gross rip volume</p>
+          <p className="price">{money(metrics.gmvCents)}</p>
+        </div>
+        <div className="ticket">
+          <p className="kicker">Live packs</p>
+          <p className="price">{metrics.livePacks}</p>
+        </div>
+        <div className="ticket">
+          <p className="kicker">Disputes</p>
+          <p className="price">{metrics.disputes}</p>
+        </div>
+        <div className="ticket">
+          <p className="kicker">Reserve still held</p>
+          <p className="price">{money(metrics.reserveCents)}</p>
+        </div>
+      </div>
       <div className="decision">
         <Link className="btn" href="/admin/cards">
           Card CSV
@@ -20,7 +49,25 @@ export default async function AdminPage() {
         <Link className="btn secondary" href="/admin/packs">
           Packs
         </Link>
+        <Link className="btn secondary" href="/admin/flags">
+          State flags
+        </Link>
+        <Link className="btn secondary" href="/admin/audit">
+          Audit log
+        </Link>
       </div>
+      <h2>Recent audit</h2>
+      <table>
+        <tbody>
+          {audits.map((row) => (
+            <tr key={row.id}>
+              <td>{row.at.toISOString()}</td>
+              <td>{row.action}</td>
+              <td>{row.entity}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

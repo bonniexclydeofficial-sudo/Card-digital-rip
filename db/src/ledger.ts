@@ -87,12 +87,13 @@ type WalletRow = {
   available_cents: number;
   held_card_cents: number;
   buyback_cents: number;
+  promo_cents: number;
   funding_hold_until: Date | null;
 };
 
 export async function lockWallet(tx: Prisma.TransactionClient, userId: string): Promise<WalletRow> {
   const rows = await tx.$queryRaw<WalletRow[]>`
-    SELECT user_id, available_cents, held_card_cents, buyback_cents, funding_hold_until
+    SELECT user_id, available_cents, held_card_cents, buyback_cents, promo_cents, funding_hold_until
     FROM wallets
     WHERE user_id = ${userId}
     FOR UPDATE
@@ -104,6 +105,7 @@ export async function lockWallet(tx: Prisma.TransactionClient, userId: string): 
     available_cents: Number(row.available_cents),
     held_card_cents: Number(row.held_card_cents),
     buyback_cents: Number(row.buyback_cents),
+    promo_cents: Number(row.promo_cents),
   };
 }
 

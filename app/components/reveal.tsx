@@ -12,6 +12,7 @@ import {
   TIER_NAMES,
   type RevealState,
 } from "@/lib/reveal/machine";
+import { RevealFx } from "./reveal-fx";
 import { Slab } from "./slab";
 
 export interface RevealPull {
@@ -30,6 +31,8 @@ export interface RevealPull {
   vaultItemId: string | null;
   creditCents: number | null;
   vaultStatus: string | null;
+  haptics?: boolean;
+  muteSound?: boolean;
 }
 
 const TICKS = ["Common", "Rare", "Epic", "Legendary", "Grail"];
@@ -116,6 +119,7 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
           </div>
         ))}
       </div>
+      <RevealFx phase={state.phase} haptics={pull.haptics ?? false} mute={pull.muteSound ?? false} reduced={skip} />
       <div className="stage">
         {showSlab ? (
           <div>
@@ -150,6 +154,7 @@ export function RevealStage({ pull }: { pull: RevealPull }) {
               <button className="btn secondary" type="submit">
                 Buy back for {pull.creditCents != null ? money(pull.creditCents) : "credits"}
               </button>
+              <p className="muted">Separate purchase offer. It expires in 72 hours. It is not a refund.</p>
             </form>
           </div>
         ) : null}

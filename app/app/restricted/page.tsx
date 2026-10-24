@@ -6,13 +6,16 @@ export default async function RestrictedPage({
   searchParams: Promise<{ reason?: string }>;
 }) {
   const params = await searchParams;
-  const reason = params.reason === "age" || params.reason === "geo" ? params.reason : "restricted";
+  const reason =
+    params.reason === "age" || params.reason === "geo" || params.reason === "excluded" ? params.reason : "restricted";
   const copy =
     reason === "age"
-      ? "Accounts are limited to people 18 and older. The attempt was logged and no account was created."
+      ? "Accounts require 18, or the age of majority if that is higher. The attempt was logged and no account was created."
       : reason === "geo"
-        ? "This state is on the blocked list (WA, NV, MI, ID, MT, OK). The attempt was logged and no account was created."
-        : "This signup cannot continue.";
+        ? "Washington, Nevada, Michigan, Idaho, and Montana are closed. Oklahoma, New Jersey, Tennessee, and Louisiana stay closed until their flags are opened. The attempt was logged and no account was created."
+        : reason === "excluded"
+          ? "This account is self-excluded and cannot rip."
+          : "This signup cannot continue.";
   return (
     <div>
       <p className="kicker">Restricted</p>

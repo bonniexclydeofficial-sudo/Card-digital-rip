@@ -12,7 +12,7 @@
     "db:seed": "tsx db/prisma/seed.ts",
     "postinstall": "prisma generate --schema db/prisma/schema.prisma || true",
     "test": "prisma generate --schema db/prisma/schema.prisma && prisma migrate deploy --schema db/prisma/schema.prisma && tsx db/prisma/seed.ts && vitest run",
-    "typecheck": "tsc -p packages/econ/tsconfig.json --noEmit && tsc -p packages/fair/tsconfig.json --noEmit && tsc -p packages/risk/tsconfig.json --noEmit && tsc -p db/tsconfig.json --noEmit && tsc -p app/tsconfig.json --noEmit",
+    "typecheck": "tsc -p packages/econ/tsconfig.json --noEmit && tsc -p packages/fair/tsconfig.json --noEmit && tsc -p packages/risk/tsconfig.json --noEmit && tsc -p packages/pay/tsconfig.json --noEmit && tsc -p packages/kyc/tsconfig.json --noEmit && tsc -p packages/pricing/tsconfig.json --noEmit && tsc -p db/tsconfig.json --noEmit && tsc -p app/tsconfig.json --noEmit",
     "e2e": "playwright test"
   },
   "devDependencies": {

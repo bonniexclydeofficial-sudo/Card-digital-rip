@@ -108,6 +108,10 @@ textarea { min-height: 180px; }
 
 .reveal {
   min-height: 70vh; display: grid; grid-template-columns: 90px 1fr; gap: 24px; align-items: center;
+  position: relative;
+}
+.reveal-shimmer {
+  position: absolute; right: 0; top: 0; width: 160px; height: 90px; opacity: 0.4; pointer-events: none;
 }
 .assay { position: relative; height: 420px; border-left: 1px solid var(--line); }
 .assay-fill {
